@@ -61,7 +61,7 @@ export default function LandingPage() {
 
   return (
     <div className="flex flex-1 flex-col overflow-x-hidden bg-neutral-50">
-      <header className="sticky top-0 z-30 border-b border-neutral-200/80 bg-white/80 backdrop-blur-md">
+      <header className="sticky top-0 z-30 border-b border-white/10 bg-[var(--color-sidebar)]/75 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2.5">
             <div
@@ -70,7 +70,7 @@ export default function LandingPage() {
             >
               P
             </div>
-            <span className="text-sm font-semibold tracking-tight text-neutral-900">PMS</span>
+            <span className="text-sm font-semibold tracking-tight text-white">PMS</span>
           </div>
           <Link href={isAuthed ? "/dashboard" : "/login"}>
             <Button size="sm">{isAuthed ? "Go to dashboard" : "Sign in"}</Button>
@@ -91,6 +91,26 @@ export default function LandingPage() {
         />
         <div
           className="animate-float-slow pointer-events-none absolute bottom-1/3 left-1/3 h-64 w-64 rounded-full bg-sky-500 opacity-[0.18] blur-[100px]"
+          aria-hidden
+        />
+
+        {/* 3D receding grid floor */}
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 opacity-50 [mask-image:linear-gradient(to_top,black,transparent_85%)]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(129,140,248,0.5) 1px, transparent 1px), linear-gradient(to bottom, rgba(129,140,248,0.5) 1px, transparent 1px)",
+            backgroundSize: "56px 56px",
+            transform: "perspective(500px) rotateX(62deg)",
+            transformOrigin: "bottom",
+          }}
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-40 opacity-70"
+          style={{
+            background: "linear-gradient(to top, var(--color-sidebar), transparent)",
+          }}
           aria-hidden
         />
 
