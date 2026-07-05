@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: pms-api
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: >-
+      corepack enable &&
+      corepack prepare pnpm@11.9.0 --activate &&
+      pnpm install --frozen-lockfile &&
+      pnpm exec prisma generate --schema=packages/db/prisma/schema.prisma &&
+      DATABASE_URL=$MIGRATION_DATABASE_URL DIRECT_URL=$MIGRATION_DATABASE_URL
+        pnpm exec prisma migrate deploy --schema=packages/db/prisma/schema.prisma &&
+      pnpm exec turbo run build --filter=@pms/api...
+    startCommand: pnpm --filter @pms/api start
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: MIGRATION_DATABASE_URL
+        sync: false
+      - key: AUTH_BOOTSTRAP_DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_TTL
+        value: 15m
+      - key: JWT_REFRESH_TTL
+        value: 7d
+      - key: AUTH_SSO_PROVIDER
+        value: stub
+      - key: AUTH_MAGIC_LINK_PROVIDER
+        value: stub
+      - key: CORS_ORIGIN
+        sync: false
