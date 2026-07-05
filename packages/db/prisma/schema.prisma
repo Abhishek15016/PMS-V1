@@ -1,0 +1,592 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  TPO
+  FACULTY_COORD
+  STUDENT
+  RECRUITER
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+  PENDING
+}
+
+/// The tenant. A single college is tenant #1; the same schema serves a
+/// university group of N departments without ever being rewritten.
+model Institution {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  ssoConfig Json?     @map("sso_config")
+  status    String    @default("ACTIVE")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  users                  User[]
+  sessions               Session[]
+  magicLinkTokens        MagicLinkToken[]
+  departments            Department[]
+  academicBatches        AcademicBatch[]
+  students               Student[]
+  companies              Company[]
+  jobDescriptions        JobDescription[]
+  drives                 Drive[]
+  rounds                 Round[]
+  applications           Application[]
+  roundResults           RoundResult[]
+  offers                 Offer[]
+  policyRules            PolicyRule[]
+  eligibilityEvaluations EligibilityEvaluation[]
+  notificationLogs       NotificationLog[]
+  auditEvents            AuditEvent[]
+  importJobs             ImportJob[]
+  placementSummaries     PlacementSummary[]
+
+  @@map("institutions")
+}
+
+/// Every row a User can reach downstream is scoped by tenantId, enforced
+/// again at the Postgres RLS layer (see prisma/migrations for the policy SQL) —
+/// app-level filtering here is defense in depth, not the primary control.
+model User {
+  id           String     @id @default(cuid())
+  tenantId     String     @map("tenant_id")
+  email        String
+  displayName  String     @map("display_name")
+  role         Role
+  departmentId String?    @map("department_id")
+  companyId    String?    @map("company_id")
+  authProvider String     @map("auth_provider") // "stub" | "google" | "microsoft" | "magic-link"
+  externalId   String?    @map("external_id") // id from the SSO/magic-link provider, if any
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  deletedAt    DateTime?  @map("deleted_at")
+
+  institution    Institution @relation(fields: [tenantId], references: [id])
+  department     Department? @relation(fields: [departmentId], references: [id])
+  company        Company?    @relation(fields: [companyId], references: [id])
+  sessions       Session[]
+  studentProfile Student?
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("users")
+}
+
+model Session {
+  id               String    @id @default(cuid())
+  tenantId         String    @map("tenant_id")
+  userId           String    @map("user_id")
+  refreshTokenHash String    @map("refresh_token_hash")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  institution Institution @relation(fields: [tenantId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// Single-use, short-expiry token backing the magic-link auth flow.
+/// tokenHash is stored, never the raw token, so a DB read alone can't be
+/// used to impersonate a pending login.
+model MagicLinkToken {
+  id         String    @id @default(cuid())
+  tenantId   String    @map("tenant_id")
+  email      String
+  tokenHash  String    @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  institution Institution @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tokenHash])
+  @@map("magic_link_tokens")
+}
+
+model Department {
+  id        String    @id @default(cuid())
+  tenantId  String    @map("tenant_id")
+  name      String
+  code      String
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  institution        Institution        @relation(fields: [tenantId], references: [id])
+  users              User[]
+  students           Student[]
+  placementSummaries PlacementSummary[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("departments")
+}
+
+model AcademicBatch {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  label     String // e.g. "2022-2026"
+  startYear Int      @map("start_year")
+  endYear   Int      @map("end_year")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  institution        Institution        @relation(fields: [tenantId], references: [id])
+  students           Student[]
+  placementSummaries PlacementSummary[]
+
+  @@unique([tenantId, label])
+  @@index([tenantId])
+  @@map("academic_batches")
+}
+
+enum PlacementStatus {
+  UNPLACED
+  PLACED
+  DEBARRED
+  OPTED_OUT
+}
+
+/// Augments a STUDENT-role User with the academic/eligibility data the
+/// policy engine (SP-15/16) evaluates against. Kept separate from User
+/// because User is an auth identity; Student is a placement-domain record
+/// that may need registrar-owned fields locked from student self-edit.
+model Student {
+  id              String          @id @default(cuid())
+  tenantId        String          @map("tenant_id")
+  userId          String          @unique @map("user_id")
+  departmentId    String          @map("department_id")
+  batchId         String          @map("batch_id")
+  rollNumber      String?         @map("roll_number")
+  cgpa            Decimal?
+  tenthPercent    Decimal?        @map("tenth_percent")
+  twelfthPercent  Decimal?        @map("twelfth_percent")
+  activeBacklogs  Int             @default(0) @map("active_backlogs")
+  backlogHistory  Int             @default(0) @map("backlog_history")
+  gapYears        Int             @default(0) @map("gap_years")
+  diplomaFlag     Boolean         @default(false) @map("diploma_flag")
+  category        String? // institution-defined (general/reserved categories); free text, not a fixed enum
+  contactPhone    String?         @map("contact_phone")
+  resumeUrl       String?         @map("resume_url")
+  placementStatus PlacementStatus @default(UNPLACED) @map("placement_status")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  deletedAt       DateTime?       @map("deleted_at")
+
+  institution Institution   @relation(fields: [tenantId], references: [id])
+  user        User          @relation(fields: [userId], references: [id])
+  department  Department    @relation(fields: [departmentId], references: [id])
+  batch       AcademicBatch @relation(fields: [batchId], references: [id])
+
+  applications           Application[]
+  offers                 Offer[]
+  eligibilityEvaluations EligibilityEvaluation[]
+
+  @@index([tenantId])
+  @@index([tenantId, departmentId])
+  @@map("students")
+}
+
+model Company {
+  id        String    @id @default(cuid())
+  tenantId  String    @map("tenant_id")
+  name      String
+  sector    String?
+  tier      String? // informal CRM classification, e.g. "tier-1"
+  website   String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  institution     Institution      @relation(fields: [tenantId], references: [id])
+  recruiters      User[]
+  jobDescriptions JobDescription[]
+
+  @@index([tenantId])
+  @@map("companies")
+}
+
+enum Slab {
+  DREAM
+  SUPER_DREAM
+  NON_DREAM
+}
+
+model JobDescription {
+  id               String    @id @default(cuid())
+  tenantId         String    @map("tenant_id")
+  companyId        String    @map("company_id")
+  title            String
+  ctcLpa           Decimal   @map("ctc_lpa")
+  ctcBreakup       Json?     @map("ctc_breakup")
+  slab             Slab?
+  eligiblePrograms String[]  @map("eligible_programs") // Department codes
+  minCriteria      Json      @map("min_criteria") // eligibility thresholds snapshot at JD creation time
+  location         String?
+  bondMonths       Int?      @map("bond_months")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
+
+  institution            Institution             @relation(fields: [tenantId], references: [id])
+  company                Company                 @relation(fields: [companyId], references: [id])
+  drives                 Drive[]
+  eligibilityEvaluations EligibilityEvaluation[]
+
+  @@index([tenantId])
+  @@map("job_descriptions")
+}
+
+enum DriveStatus {
+  DRAFT
+  SCHEDULED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+model Drive {
+  id          String      @id @default(cuid())
+  tenantId    String      @map("tenant_id")
+  jdId        String      @map("jd_id")
+  status      DriveStatus @default(DRAFT)
+  scheduledAt DateTime?   @map("scheduled_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  deletedAt   DateTime?   @map("deleted_at")
+
+  institution    Institution    @relation(fields: [tenantId], references: [id])
+  jobDescription JobDescription @relation(fields: [jdId], references: [id])
+  rounds         Round[]
+  applications   Application[]
+
+  @@index([tenantId])
+  @@map("drives")
+}
+
+enum RoundType {
+  APTITUDE
+  CODING
+  GD
+  TECHNICAL
+  HR
+  OFFER
+}
+
+/// Ordered stage in a Drive's pipeline. `position` is the drag-orderable
+/// sequence (SP-13); RoundResult is the per-application outcome for a round.
+model Round {
+  id          String    @id @default(cuid())
+  tenantId    String    @map("tenant_id")
+  driveId     String    @map("drive_id")
+  type        RoundType
+  position    Int
+  mode        String?
+  cutoff      Decimal?
+  scheduledAt DateTime? @map("scheduled_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  institution  Institution   @relation(fields: [tenantId], references: [id])
+  drive        Drive         @relation(fields: [driveId], references: [id])
+  roundResults RoundResult[]
+
+  @@unique([driveId, position])
+  @@index([tenantId])
+  @@map("rounds")
+}
+
+enum ApplicationStatus {
+  APPLIED
+  SHORTLISTED
+  IN_ROUND
+  REJECTED
+  SELECTED
+  WITHDRAWN
+}
+
+model Application {
+  id        String            @id @default(cuid())
+  tenantId  String            @map("tenant_id")
+  studentId String            @map("student_id")
+  driveId   String            @map("drive_id")
+  status    ApplicationStatus @default(APPLIED)
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  institution  Institution   @relation(fields: [tenantId], references: [id])
+  student      Student       @relation(fields: [studentId], references: [id])
+  drive        Drive         @relation(fields: [driveId], references: [id])
+  roundResults RoundResult[]
+  offers       Offer[]
+
+  @@unique([studentId, driveId])
+  @@index([tenantId])
+  @@map("applications")
+}
+
+enum RoundResultStatus {
+  PENDING
+  PASS
+  FAIL
+}
+
+model RoundResult {
+  id            String            @id @default(cuid())
+  tenantId      String            @map("tenant_id")
+  applicationId String            @map("application_id")
+  roundId       String            @map("round_id")
+  status        RoundResultStatus @default(PENDING)
+  score         Decimal?
+  notes         String?
+  recordedAt    DateTime?         @map("recorded_at")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  institution Institution @relation(fields: [tenantId], references: [id])
+  application Application @relation(fields: [applicationId], references: [id])
+  round       Round       @relation(fields: [roundId], references: [id])
+
+  @@unique([applicationId, roundId])
+  @@index([tenantId])
+  @@map("round_results")
+}
+
+enum OfferStatus {
+  /// Recruiter-proposed, awaiting TPO/Super Admin approval (RBAC "propose"
+  /// scope) — does not count against the offer cap until approved.
+  PENDING
+  EXTENDED
+  ACCEPTED
+  REJECTED
+  REVOKED
+}
+
+/// A PPO (is_ppo=true) has no Application — it converts directly from an
+/// internship, so applicationId is nullable (SP-19).
+model Offer {
+  id                 String      @id @default(cuid())
+  tenantId           String      @map("tenant_id")
+  studentId          String      @map("student_id")
+  applicationId      String?     @map("application_id")
+  ctcLpa             Decimal     @map("ctc_lpa")
+  slab               Slab?
+  status             OfferStatus @default(EXTENDED)
+  isPpo              Boolean     @default(false) @map("is_ppo")
+  sourceInternshipId String?     @map("source_internship_id")
+  extendedAt         DateTime    @default(now()) @map("extended_at")
+  respondedAt        DateTime?   @map("responded_at")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+
+  institution Institution  @relation(fields: [tenantId], references: [id])
+  student     Student      @relation(fields: [studentId], references: [id])
+  application Application? @relation(fields: [applicationId], references: [id])
+
+  @@index([tenantId])
+  @@index([studentId])
+  @@map("offers")
+}
+
+enum PolicyRuleType {
+  ELIGIBILITY_CRITERIA
+  SLAB_DEFINITION
+  OFFER_CAP
+  DEBAR_RULE
+  RE_ELIGIBILITY
+}
+
+enum PolicyRuleStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+/// Versioned: editing a rule creates a new row (new version) rather than
+/// mutating in place, so past EligibilityEvaluations retain the exact rule
+/// version that produced them (SP-15/16).
+model PolicyRule {
+  id            String           @id @default(cuid())
+  tenantId      String           @map("tenant_id")
+  type          PolicyRuleType
+  name          String
+  version       Int              @default(1)
+  status        PolicyRuleStatus @default(DRAFT)
+  definition    Json // shape depends on `type` — see packages/types rule schemas (slice 9)
+  effectiveFrom DateTime?        @map("effective_from")
+  supersedesId  String?          @map("supersedes_id")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+
+  institution            Institution             @relation(fields: [tenantId], references: [id])
+  supersedes             PolicyRule?             @relation("PolicyRuleVersions", fields: [supersedesId], references: [id])
+  supersededBy           PolicyRule[]            @relation("PolicyRuleVersions")
+  eligibilityEvaluations EligibilityEvaluation[]
+
+  @@index([tenantId])
+  @@index([tenantId, type, status])
+  @@map("policy_rules")
+}
+
+/// Cached result of evaluating a Student against a JD under a specific
+/// PolicyRule version — keyed so a repeat evaluation is a cache read, not a
+/// recompute (SP-16 perf target: <200ms on cache hit).
+/// ruleVersion is nullable: a tenant with no active institution-wide
+/// ELIGIBILITY_CRITERIA PolicyRule (see EligibilityService.resolveCriteria)
+/// still evaluates against the JD's own minCriteria snapshot alone — that's
+/// a valid, cacheable evaluation, just not one anchored to a policy
+/// version. @@unique on a nullable column still permits this: Postgres
+/// treats each NULL as distinct, so lookups/upserts for the "no active
+/// policy" case are done by an explicit findFirst in the service rather
+/// than relying on the unique constraint to prevent duplicates.
+model EligibilityEvaluation {
+  id          String   @id @default(cuid())
+  tenantId    String   @map("tenant_id")
+  studentId   String   @map("student_id")
+  jdId        String   @map("jd_id")
+  ruleVersion String?  @map("rule_version")
+  result      Boolean
+  reasons     Json // [{ ruleCode, ruleLabel, passed, expected, actual, message }]
+  evaluatedAt DateTime @default(now()) @map("evaluated_at")
+
+  institution    Institution    @relation(fields: [tenantId], references: [id])
+  student        Student        @relation(fields: [studentId], references: [id])
+  jobDescription JobDescription @relation(fields: [jdId], references: [id])
+  policyRule     PolicyRule?    @relation(fields: [ruleVersion], references: [id])
+
+  @@unique([studentId, jdId, ruleVersion])
+  @@index([tenantId])
+  @@map("eligibility_evaluations")
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  DEV_INBOX
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  FAILED
+  DELIVERED
+}
+
+model NotificationLog {
+  id          String              @id @default(cuid())
+  tenantId    String              @map("tenant_id")
+  userId      String?             @map("user_id")
+  channel     NotificationChannel
+  templateRef String?             @map("template_ref")
+  payload     Json
+  status      NotificationStatus  @default(QUEUED)
+  sentAt      DateTime?           @map("sent_at")
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  institution Institution @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("notification_logs")
+}
+
+model AuditEvent {
+  id           String   @id @default(cuid())
+  tenantId     String   @map("tenant_id")
+  actorUserId  String?  @map("actor_user_id")
+  action       String // e.g. "policy.rule.updated", "student.debarred"
+  resourceType String   @map("resource_type")
+  resourceId   String?  @map("resource_id")
+  metadata     Json?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  institution Institution @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, resourceType, resourceId])
+  @@map("audit_events")
+}
+
+enum ImportJobStatus {
+  PENDING
+  VALIDATING
+  READY
+  APPLYING
+  COMPLETED
+  FAILED
+}
+
+model ImportJob {
+  id               String          @id @default(cuid())
+  tenantId         String          @map("tenant_id")
+  createdByUserId  String?         @map("created_by_user_id")
+  fileName         String          @map("file_name")
+  entityType       String          @map("entity_type") // "students" | "companies" | ...
+  status           ImportJobStatus @default(PENDING)
+  columnMapping    Json?           @map("column_mapping")
+  validationReport Json?           @map("validation_report")
+  rowLineage       Json?           @map("row_lineage")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  institution Institution @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("import_jobs")
+}
+
+/// Precomputed, debounced-recompute snapshot per (tenant, batch,
+/// department-or-null). `departmentId: null` is the tenant-wide,
+/// all-departments row for that batch — the KPI strip reads it directly;
+/// the branch heatmap reads the per-department rows. Recomputed by
+/// summary-recompute.processor.ts (SP-24 backend pt.1) off domain events
+/// from applications/offers/eligibility, debounced so a burst of activity
+/// (e.g. bulk round-result entry) triggers one recompute, not N.
+model PlacementSummary {
+  id               String   @id @default(cuid())
+  tenantId         String   @map("tenant_id")
+  batchId          String   @map("batch_id")
+  departmentId     String?  @map("department_id")
+  totalStudents    Int      @map("total_students")
+  eligibleCount    Int      @map("eligible_count")
+  appliedCount     Int      @map("applied_count")
+  shortlistedCount Int      @map("shortlisted_count")
+  selectedCount    Int      @map("selected_count")
+  placedCount      Int      @map("placed_count")
+  unplacedCount    Int      @map("unplaced_count")
+  highestCtc       Decimal? @map("highest_ctc")
+  medianCtc        Decimal? @map("median_ctc")
+  averageCtc       Decimal? @map("average_ctc")
+  activeDriveCount Int      @map("active_drive_count")
+  recruiterCount   Int      @map("recruiter_count")
+  computedAt       DateTime @map("computed_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  institution Institution   @relation(fields: [tenantId], references: [id])
+  batch       AcademicBatch @relation(fields: [batchId], references: [id])
+  department  Department?   @relation(fields: [departmentId], references: [id])
+
+  @@unique([tenantId, batchId, departmentId])
+  @@index([tenantId])
+  @@map("placement_summaries")
+}

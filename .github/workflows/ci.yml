@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Service containers run on the standard 5432/6379 ports — no need for the
+# 5433 remap local dev uses (that only exists to dodge a native Postgres
+# install on the developer's machine; GitHub-hosted runners have no such
+# conflict).
+env:
+  DATABASE_URL: postgresql://pms_app:pms_app_dev_password@localhost:5432/pms?schema=public
+  DIRECT_URL: postgresql://pms_app:pms_app_dev_password@localhost:5432/pms?schema=public
+  MIGRATION_DATABASE_URL: postgresql://pms:pms_dev_password@localhost:5432/pms?schema=public
+  AUTH_BOOTSTRAP_DATABASE_URL: postgresql://pms_authbootstrap:pms_authbootstrap_dev_password@localhost:5432/pms?schema=public
+  REDIS_URL: redis://localhost:6379
+  JWT_ACCESS_SECRET: ci-access-secret-not-for-prod
+  JWT_REFRESH_SECRET: ci-refresh-secret-not-for-prod
+  JWT_ACCESS_TTL: 15m
+  JWT_REFRESH_TTL: 7d
+  AUTH_SSO_PROVIDER: stub
+  AUTH_MAGIC_LINK_PROVIDER: stub
+  API_PORT: 4000
+  CORS_ORIGIN: http://localhost:3000
+  NEXT_PUBLIC_API_URL: http://localhost:4000
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: pms
+          POSTGRES_PASSWORD: pms_dev_password
+          POSTGRES_DB: pms
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pms -d pms"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Migrations (and only migrations/seed) run as the superuser role —
+      # everything else in this job uses the restricted pms_app role via the
+      # job-level DATABASE_URL, matching the three-role separation the app
+      # itself relies on for RLS to be meaningful.
+      - name: Apply migrations
+        working-directory: packages/db
+        run: pnpm exec prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ env.MIGRATION_DATABASE_URL }}
+
+      - name: Seed database
+        working-directory: packages/db
+        run: pnpm exec tsx prisma/seed.ts
+        env:
+          DATABASE_URL: ${{ env.MIGRATION_DATABASE_URL }}
+
+      - name: Lint
+        run: pnpm exec turbo run lint
+
+      - name: Typecheck
+        run: pnpm exec turbo run typecheck
+
+      - name: Unit tests
+        run: pnpm exec turbo run test
+
+      - name: e2e tests (api, real Postgres/Redis)
+        working-directory: apps/api
+        run: pnpm exec jest --config ./test/jest-e2e.json --runInBand
+
+      - name: Build
+        run: pnpm exec turbo run build
