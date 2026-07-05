@@ -64,3 +64,44 @@ pnpm --filter @pms/web dev     # Next.js on :3000
 ```
 
 Full pipeline: `pnpm exec turbo run lint typecheck test build`.
+
+## Production deployment (free tier)
+
+Live at (repo: `Abhishek15016/PMS-V1`, this repo was recreated from scratch — history was squashed to a single commit to scrub a contributor's dev-machine identity that had leaked into every prior commit's author field):
+
+| Layer | Host | Notes |
+|---|---|---|
+| Frontend | **Vercel** — `https://pms-v1-web.vercel.app` | Root directory `apps/web`. Auto-redeploys on every push to `main`. `NEXT_PUBLIC_*` vars are baked in at **build** time — changing one requires a manual redeploy, not just a save. |
+| Backend | **Render** (free web service) — `https://pms-api-b9cg.onrender.com` | Defined by `render.yaml` (Blueprint) at repo root. Free tier spins down after ~15 min idle; first request after that takes ~50s. `/health` and `/health/db` are the health-check endpoints. |
+| Postgres | **Neon** (free tier) | Database is named `pms` (not the default `neondb` — had to be created explicitly, since migrations hardcode `GRANT ... ON DATABASE pms`). Neon's "owner" role (`neondb_owner`) is used only for migrations (mapped to `MIGRATION_DATABASE_URL`); the app itself connects as `pms_app`/`pms_authbootstrap` per the existing three-role RLS model. Neon gives both a **pooled** connection string (`-pooler` in the hostname — used for `DATABASE_URL`) and a **direct** one (used for `DIRECT_URL`/migrations). |
+| Redis | **Upstash** (free tier) | TLS-only endpoint (`rediss://`). `apps/api/src/app.module.ts`'s BullMQ connection factory explicitly passes `tls: {}` when the URL scheme is `rediss:` — ioredis doesn't infer this from the URL when given a parsed options object instead of the raw string. |
+
+**Real connection strings/secrets are not committed anywhere in this repo** — they live only in the Render/Vercel dashboards' environment variable settings (`render.yaml` deliberately marks them `sync: false` placeholders). If you need to rotate or inspect them, go to the respective dashboard, not the git history.
+
+### Demo login (SSO stub, no real passwords)
+
+Tenant slug: `demo-college`. Pick a role and use its email on the login page's "Staff & Students" tab (Recruiter uses the separate "Recruiter" tab + its dev-mode magic-link button):
+
+| Role | Email |
+|---|---|
+| Super Admin | `super.admin@demo-college.edu` |
+| TPO | `tpo@demo-college.edu` |
+| Faculty Coord (CSE) | `faculty.cse@demo-college.edu` |
+| Student (CSE) | `student@demo-college.edu` |
+| Student (ECE) | `student2.ece@demo-college.edu` |
+| Recruiter | `recruiter@demo-college.edu` |
+
+`packages/db/prisma/seed-extra.ts` (not run in CI, not part of `seed.ts` — run by hand with a superuser `DATABASE_URL`) adds a much larger Indian-college dataset on top of the minimal `seed.ts` fixture: 6 departments, 2 batches, ~96 students, 12 recruiting companies (TCS through Google, spanning all three CTC slabs), drives/rounds/applications/round-results/offers, and 3 active policy rules. Guarded against double-running (checks for a company named "Zoho Corporation" first).
+
+### Deployment gotchas actually hit (in case they recur)
+
+These were each discovered the hard way going from a green CI to a working production deploy — CI passing does **not** guarantee `apps/api`'s `start` script or a fresh cloud Postgres/Redis actually work:
+
+1. **`pnpm/action-setup` errors if both a workflow `version` input and `package.json`'s `packageManager` field are set** and the strings don't match exactly (e.g. one hash-pinned, one not) — `ERR_PNPM_BAD_PM_VERSION` / "Multiple versions of pnpm specified". Keep exactly one source of truth (we dropped the workflow input, kept `packageManager` unpinned).
+2. **pnpm 11.9.0 requires Node.js ≥22.13.** Running it under Node 20 crashes with `ERR_UNKNOWN_BUILTIN_MODULE: node:sqlite` the moment `actions/setup-node`'s `cache: pnpm` step (or Render) tries to invoke it. CI and Render are both pinned to Node 22.
+3. **`apps/api`'s `start` script (`node dist/main.js`) never actually worked**, on any host — `nest build` only compiles `apps/api`'s own source; `@pms/db`/`@pms/types` are consumed as raw `.ts` via their `package.json` `"main"` pointing straight at `src/index.ts` (no build step for those packages), and plain `node` can't load `.ts` without a loader. Fixed by registering ts-node in `start` too: `node -r ts-node/register/transpile-only dist/main.js` (matches what `dev` already did). CI never caught this because it only ever ran `nest build`, never `start`.
+4. **Turborepo 2.x strips undeclared env vars from spawned tasks** ("strict" env mode is the default) — `DATABASE_URL`/`REDIS_URL`/JWT secrets/etc. were invisible inside `turbo run test` even though the CI job set them, until added to `globalPassThroughEnv` in `turbo.json`.
+5. **Prisma Migrate uses `directUrl`, not `url`/`DATABASE_URL`**, for `migrate deploy`. Overriding only `DATABASE_URL` to the superuser connection for the migrations step left `DIRECT_URL` pointing at the not-yet-created `pms_app` role, causing a chicken-and-egg auth failure.
+6. **`@prisma/client`'s automatic postinstall generation silently no-ops** because the schema lives at `packages/db/prisma/schema.prisma`, not a default-searched location — nothing else in the pipeline called `prisma generate` explicitly, so anything importing `@prisma/client` crashed with "did not initialize yet" until an explicit generate step was added.
+7. **`DropdownMenu`'s default downward placement clips when its trigger sits near the bottom of the viewport** (the sidebar's user/logout menu) — it gained a `side="top"|"bottom"` prop for this.
+8. **A YAML folded scalar (`>-`) doesn't always join the way you'd expect** — an indented continuation line got treated as a separate shell statement rather than staying chained with `&&`, silently detaching an env-var override from the command it was meant for. Keep multi-command `buildCommand`/`run` strings on one literal line when in doubt.
