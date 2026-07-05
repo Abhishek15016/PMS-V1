@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { BarChart3, ShieldCheck, Users } from "lucide-react";
 import { Logo } from "@pms/ui";
 
@@ -38,7 +39,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           aria-hidden
         />
 
-        <Logo className="relative" textClassName="text-white" />
+        <Link href="/" className="relative">
+          <Logo textClassName="text-white" />
+        </Link>
 
         <div className="relative">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-brand-300 backdrop-blur-sm">

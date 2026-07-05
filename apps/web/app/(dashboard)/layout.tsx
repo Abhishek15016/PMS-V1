@@ -127,7 +127,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         >
           <Menu className="h-5 w-5" />
         </button>
-        <Logo size="sm" textClassName="text-white" />
+        <Link href="/">
+          <Logo size="sm" textClassName="text-white" />
+        </Link>
         <button
           type="button"
           onClick={() => setMobileNavOpen(true)}
@@ -164,7 +166,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         />
 
         <div className="relative mb-7 flex items-center justify-between px-2">
-          <div className="flex items-center gap-2.5">
+          <Link href="/" className="flex items-center gap-2.5">
             <Logo showText={false} />
             <div>
               <p className="text-sm font-semibold tracking-tight text-white">PMS</p>
@@ -172,7 +174,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 Placement Management
               </p>
             </div>
-          </div>
+          </Link>
           <button
             type="button"
             onClick={() => setMobileNavOpen(false)}

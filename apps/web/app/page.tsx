@@ -81,7 +81,9 @@ export default function LandingPage() {
         )}
       >
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Logo textClassName="text-white" />
+          <Link href="/">
+            <Logo textClassName="text-white" />
+          </Link>
           <Link href={isAuthed ? "/dashboard" : "/login"}>
             <Button size="sm">{isAuthed ? "Go to dashboard" : "Sign in"}</Button>
           </Link>
