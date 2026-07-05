@@ -16,7 +16,9 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
-  const port = process.env.API_PORT ? Number(process.env.API_PORT) : 4000;
+  // Render (and most PaaS hosts) assign the port dynamically via PORT and
+  // require the app to bind to it; API_PORT remains the local/CI default.
+  const port = Number(process.env.PORT ?? process.env.API_PORT ?? 4000);
   await app.listen(port);
   // eslint-disable-next-line no-console
   console.log(`api listening on :${port}`);

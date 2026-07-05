@@ -39,6 +39,10 @@ import { StudentsModule } from "./modules/students/students.module";
             port: Number(url.port || 6379),
             password: url.password || undefined,
             maxRetriesPerRequest: null,
+            // rediss: (Upstash and most managed Redis hosts) requires TLS;
+            // ioredis only enables it when explicitly told to, even though
+            // the URL scheme says so.
+            ...(url.protocol === "rediss:" ? { tls: {} } : {}),
           },
         };
       },
