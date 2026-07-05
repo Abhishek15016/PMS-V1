@@ -166,6 +166,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ) : (
             <DropdownMenu
               align="start"
+              side="top"
               trigger={
                 <div className="flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-1.5 text-left transition-colors hover:bg-[var(--color-sidebar-hover-bg)]">
                   <Avatar name={displayName || email} size="sm" />
@@ -191,9 +192,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      <div className="flex flex-1 flex-col">
-        <main className="flex-1 bg-gradient-to-b from-neutral-50 via-neutral-50 to-neutral-50/60 p-6 sm:p-8">
-          {children}
+      <div className="relative flex flex-1 flex-col overflow-hidden">
+        <div
+          className="animate-float-slow pointer-events-none fixed -right-32 -top-32 h-[32rem] w-[32rem] rounded-full opacity-[0.16] blur-[100px]"
+          style={{ background: "var(--gradient-brand)" }}
+          aria-hidden
+        />
+        <div
+          className="animate-float-slower pointer-events-none fixed -bottom-32 -left-16 h-[26rem] w-[26rem] rounded-full bg-violet-500 opacity-[0.14] blur-[100px]"
+          aria-hidden
+        />
+        <div
+          className="animate-float-slow pointer-events-none fixed bottom-20 right-[10%] h-72 w-72 rounded-full bg-sky-400 opacity-[0.10] blur-[100px]"
+          aria-hidden
+        />
+        <main className="relative flex-1 overflow-y-auto bg-gradient-to-b from-neutral-50 via-neutral-50 to-neutral-50/60 p-6 sm:p-8">
+          <div className="animate-fade-in-up">{children}</div>
         </main>
       </div>
     </div>

@@ -103,8 +103,12 @@ export default function DashboardOverviewPage() {
     <div className="mx-auto max-w-6xl space-y-8">
       <div className="relative overflow-hidden rounded-[var(--radius-2xl)] border border-neutral-200/80 bg-white p-8 shadow-[var(--shadow-sm)]">
         <div
-          className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full opacity-[0.10] blur-[90px]"
+          className="animate-float-slow pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full opacity-[0.18] blur-[90px]"
           style={{ background: "var(--gradient-brand)" }}
+          aria-hidden
+        />
+        <div
+          className="animate-float-slower pointer-events-none absolute -bottom-16 left-1/4 h-48 w-48 rounded-full bg-sky-400 opacity-[0.10] blur-[80px]"
           aria-hidden
         />
         <div className="pointer-events-none absolute inset-0 bg-dot-pattern opacity-[0.5] [mask-image:linear-gradient(to_bottom,black,transparent)]" aria-hidden />

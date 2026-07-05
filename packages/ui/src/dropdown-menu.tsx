@@ -5,11 +5,19 @@ export interface DropdownMenuProps {
   trigger: React.ReactNode;
   children: React.ReactNode;
   align?: "start" | "end";
+  /** Which side of the trigger the menu opens on — "top" for triggers pinned near the bottom of the viewport (e.g. a sidebar footer), so the menu isn't clipped. */
+  side?: "top" | "bottom";
   className?: string;
 }
 
 /** Minimal click-outside/Escape-to-close menu — no portal, positioned relative to its trigger. */
-export function DropdownMenu({ trigger, children, align = "end", className }: DropdownMenuProps) {
+export function DropdownMenu({
+  trigger,
+  children,
+  align = "end",
+  side = "bottom",
+  className,
+}: DropdownMenuProps) {
   const [open, setOpen] = React.useState(false);
   const rootRef = React.useRef<HTMLDivElement>(null);
 
@@ -38,7 +46,8 @@ export function DropdownMenu({ trigger, children, align = "end", className }: Dr
         <div
           role="menu"
           className={cn(
-            "absolute z-40 mt-2 min-w-[12rem] rounded-[var(--radius-lg)] border border-neutral-200/80 bg-white p-1.5 shadow-[var(--shadow-lg)]",
+            "absolute z-40 min-w-[12rem] rounded-[var(--radius-lg)] border border-neutral-200/80 bg-white p-1.5 shadow-[var(--shadow-lg)]",
+            side === "top" ? "bottom-full mb-2" : "top-full mt-2",
             align === "end" ? "right-0" : "left-0",
             className,
           )}

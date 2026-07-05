@@ -95,4 +95,34 @@ body {
   .card-hover-lift:hover {
     transform: translateY(-3px);
   }
+
+  .animate-float-slow {
+    animation: float-slow 14s ease-in-out infinite;
+  }
+  .animate-float-slower {
+    animation: float-slow 20s ease-in-out infinite reverse;
+  }
+  .animate-fade-in-up {
+    animation: fade-in-up 500ms ease-out both;
+  }
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(3%, -4%) scale(1.08);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

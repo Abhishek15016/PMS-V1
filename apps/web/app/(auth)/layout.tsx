@@ -24,12 +24,16 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="relative hidden w-[46%] flex-col justify-between overflow-hidden bg-[var(--color-sidebar)] px-12 py-12 lg:flex">
         <div className="pointer-events-none absolute inset-0 bg-grid-pattern opacity-40" aria-hidden />
         <div
-          className="pointer-events-none absolute -left-20 -top-20 h-96 w-96 rounded-full opacity-30 blur-[100px]"
+          className="animate-float-slow pointer-events-none absolute -left-20 -top-20 h-96 w-96 rounded-full opacity-40 blur-[100px]"
           style={{ background: "var(--gradient-brand)" }}
           aria-hidden
         />
         <div
-          className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-violet-600 opacity-20 blur-[100px]"
+          className="animate-float-slower pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-violet-600 opacity-30 blur-[100px]"
+          aria-hidden
+        />
+        <div
+          className="animate-float-slow pointer-events-none absolute bottom-1/3 left-1/3 h-64 w-64 rounded-full bg-sky-500 opacity-[0.18] blur-[100px]"
           aria-hidden
         />
 
@@ -76,9 +80,14 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-neutral-50 px-4 py-12">
+        <div className="pointer-events-none absolute inset-0 bg-dot-pattern opacity-40 [mask-image:radial-gradient(circle_at_center,black,transparent_70%)]" aria-hidden />
         <div
-          className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full opacity-[0.07] blur-[100px]"
+          className="animate-float-slow pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full opacity-[0.14] blur-[100px]"
           style={{ background: "var(--gradient-brand)" }}
+          aria-hidden
+        />
+        <div
+          className="animate-float-slower pointer-events-none absolute -bottom-24 -left-24 h-80 w-80 rounded-full bg-violet-400 opacity-[0.12] blur-[100px]"
           aria-hidden
         />
         <div className="relative w-full max-w-sm">{children}</div>
