@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Award,
@@ -10,7 +11,7 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import { Button } from "@pms/ui";
+import { Button, Logo, cn } from "@pms/ui";
 import { useAuthStore } from "@/lib/auth/auth-store";
 
 const FEATURES = [
@@ -58,20 +59,29 @@ export default function LandingPage() {
   const hasHydrated = useAuthStore((s) => s.hasHydrated);
   const accessToken = useAuthStore((s) => s.accessToken);
   const isAuthed = hasHydrated && !!accessToken;
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > 32);
+    }
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <div className="flex flex-1 flex-col overflow-x-hidden bg-neutral-50">
-      <header className="sticky top-0 z-30 border-b border-white/10 bg-[var(--color-sidebar)]/75 backdrop-blur-md">
+      <header
+        className={cn(
+          "fixed inset-x-0 top-0 z-30 transition-colors duration-300",
+          scrolled
+            ? "border-b border-white/10 bg-[var(--color-sidebar)]/80 backdrop-blur-md"
+            : "border-b border-transparent bg-transparent",
+        )}
+      >
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] text-sm font-bold text-white shadow-[var(--shadow-glow-brand)]"
-              style={{ background: "var(--gradient-brand)" }}
-            >
-              P
-            </div>
-            <span className="text-sm font-semibold tracking-tight text-white">PMS</span>
-          </div>
+          <Logo textClassName="text-white" />
           <Link href={isAuthed ? "/dashboard" : "/login"}>
             <Button size="sm">{isAuthed ? "Go to dashboard" : "Sign in"}</Button>
           </Link>

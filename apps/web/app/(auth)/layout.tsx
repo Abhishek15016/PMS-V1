@@ -1,4 +1,5 @@
 import { BarChart3, ShieldCheck, Users } from "lucide-react";
+import { Logo } from "@pms/ui";
 
 const FEATURES = [
   {
@@ -37,15 +38,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           aria-hidden
         />
 
-        <div className="relative flex items-center gap-2.5">
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] text-sm font-bold text-white shadow-[var(--shadow-glow-brand)]"
-            style={{ background: "var(--gradient-brand)" }}
-          >
-            P
-          </div>
-          <span className="text-sm font-semibold tracking-tight text-white">PMS</span>
-        </div>
+        <Logo className="relative" textClassName="text-white" />
 
         <div className="relative">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-brand-300 backdrop-blur-sm">

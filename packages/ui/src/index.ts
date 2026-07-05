@@ -15,3 +15,4 @@ export * from "./dropdown-menu";
 export * from "./toast";
 export * from "./page-header";
 export * from "./stat-card";
+export * from "./logo";

@@ -18,7 +18,7 @@ import {
 import { useAuthStore } from "@/lib/auth/auth-store";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { useLogout } from "@/lib/auth/use-logout";
-import { Avatar, DropdownMenu, DropdownMenuItem, DropdownMenuSeparator, Skeleton, cn } from "@pms/ui";
+import { Avatar, DropdownMenu, DropdownMenuItem, DropdownMenuSeparator, Logo, Skeleton, cn } from "@pms/ui";
 import type { Role } from "@pms/types";
 
 const NAV_ITEMS: Array<{
@@ -127,15 +127,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         >
           <Menu className="h-5 w-5" />
         </button>
-        <div className="flex items-center gap-2">
-          <div
-            className="flex h-7 w-7 items-center justify-center rounded-[var(--radius-sm)] text-xs font-bold text-white"
-            style={{ background: "var(--gradient-brand)" }}
-          >
-            P
-          </div>
-          <span className="text-sm font-semibold tracking-tight text-white">PMS</span>
-        </div>
+        <Logo size="sm" textClassName="text-white" />
         <button
           type="button"
           onClick={() => setMobileNavOpen(true)}
@@ -173,12 +165,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <div className="relative mb-7 flex items-center justify-between px-2">
           <div className="flex items-center gap-2.5">
-            <div
-              className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] text-sm font-bold text-white shadow-[var(--shadow-glow-brand)]"
-              style={{ background: "var(--gradient-brand)" }}
-            >
-              P
-            </div>
+            <Logo showText={false} />
             <div>
               <p className="text-sm font-semibold tracking-tight text-white">PMS</p>
               <p className="text-[11px] text-[var(--color-sidebar-foreground-muted)]">
