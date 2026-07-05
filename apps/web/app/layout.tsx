@@ -9,8 +9,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "PMS — Placement Management System",
-  description: "Unified placement management for institutions.",
+  title: "PMS — The Placement OS for Indian Institutions",
+  description:
+    "Run drives, eligibility, offers, WhatsApp-first comms, and NIRF/NAAC-ready reporting from one live system. Built for Indian TPOs, students, and recruiters.",
 };
 
 export default function RootLayout({

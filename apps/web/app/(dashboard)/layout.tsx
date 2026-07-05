@@ -3,81 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  Award,
-  BarChart3,
-  Building2,
-  ClipboardList,
-  GraduationCap,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  ShieldCheck,
-  X,
-} from "lucide-react";
+import { LogOut, Menu, Search, X } from "lucide-react";
 import { useAuthStore } from "@/lib/auth/auth-store";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { useLogout } from "@/lib/auth/use-logout";
+import { NAV_ITEMS, ROLE_LABELS } from "@/lib/navigation";
+import { CommandPalette } from "@/components/command-palette";
 import { Avatar, DropdownMenu, DropdownMenuItem, DropdownMenuSeparator, Logo, Skeleton, cn } from "@pms/ui";
-import type { Role } from "@pms/types";
-
-const NAV_ITEMS: Array<{
-  label: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  roles: Role[];
-}> = [
-  {
-    label: "Overview",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-    roles: ["SUPER_ADMIN", "TPO", "FACULTY_COORD", "STUDENT", "RECRUITER"],
-  },
-  {
-    label: "Students",
-    href: "/students",
-    icon: GraduationCap,
-    roles: ["SUPER_ADMIN", "TPO", "FACULTY_COORD", "STUDENT"],
-  },
-  {
-    label: "Companies & Drives",
-    href: "/companies",
-    icon: Building2,
-    roles: ["SUPER_ADMIN", "TPO", "FACULTY_COORD", "STUDENT", "RECRUITER"],
-  },
-  {
-    label: "Policy & Eligibility",
-    href: "/policy",
-    icon: ShieldCheck,
-    roles: ["SUPER_ADMIN", "TPO"],
-  },
-  {
-    label: "Applications",
-    href: "/applications",
-    icon: ClipboardList,
-    roles: ["TPO", "FACULTY_COORD", "STUDENT"],
-  },
-  {
-    label: "Offers",
-    href: "/offers",
-    icon: Award,
-    roles: ["SUPER_ADMIN", "TPO", "FACULTY_COORD", "STUDENT", "RECRUITER"],
-  },
-  {
-    label: "Analytics",
-    href: "/analytics",
-    icon: BarChart3,
-    roles: ["SUPER_ADMIN", "TPO", "FACULTY_COORD", "STUDENT", "RECRUITER"],
-  },
-];
-
-const ROLE_LABELS: Record<string, string> = {
-  SUPER_ADMIN: "Super Admin",
-  TPO: "Training & Placement Officer",
-  FACULTY_COORD: "Faculty Coordinator",
-  STUDENT: "Student",
-  RECRUITER: "Recruiter",
-};
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -118,7 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex flex-1">
-      <div className="fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between border-b border-[var(--color-sidebar-border)] bg-[var(--color-sidebar)] px-4 lg:hidden">
+      <div className="fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between border-b border-[var(--color-sidebar-border)] bg-[var(--color-sidebar)] px-4 lg:hidden print:hidden">
         <button
           type="button"
           onClick={() => setMobileNavOpen(true)}
@@ -150,7 +82,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex h-full w-64 max-w-[85vw] shrink-0 flex-col overflow-hidden border-r border-[var(--color-sidebar-border)] bg-[var(--color-sidebar)] px-3 py-5 transition-transform duration-200 ease-out",
+          "fixed inset-y-0 left-0 z-50 flex h-full w-64 max-w-[85vw] shrink-0 flex-col overflow-hidden border-r border-[var(--color-sidebar-border)] bg-[var(--color-sidebar)] px-3 py-5 transition-transform duration-200 ease-out print:hidden",
           "lg:sticky lg:top-0 lg:h-screen lg:translate-x-0",
           mobileNavOpen ? "translate-x-0" : "-translate-x-full",
         )}
@@ -184,6 +116,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <X className="h-4 w-4" />
           </button>
         </div>
+
+        <button
+          type="button"
+          onClick={() =>
+            window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true }))
+          }
+          className="relative mb-4 flex w-full items-center gap-2.5 rounded-[var(--radius-md)] border border-[var(--color-sidebar-border)] bg-[var(--color-sidebar-hover-bg)]/60 px-3 py-2 text-left text-sm text-[var(--color-sidebar-foreground-muted)] transition-colors hover:border-white/20 hover:text-white"
+        >
+          <Search className="h-3.5 w-3.5 shrink-0" />
+          <span className="flex-1">Search…</span>
+          <kbd className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-medium">
+            Ctrl K
+          </kbd>
+        </button>
 
         <nav className="relative flex flex-1 flex-col gap-1 overflow-y-auto text-sm">
           {visibleItems.map(({ label, href, icon: Icon }) => {
@@ -249,24 +195,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      <div className="relative flex flex-1 flex-col overflow-hidden pt-14 lg:pt-0">
+      <div className="relative flex flex-1 flex-col overflow-hidden pt-14 lg:pt-0 print:overflow-visible print:pt-0">
         <div
-          className="animate-float-slow pointer-events-none fixed -right-32 -top-32 h-[32rem] w-[32rem] rounded-full opacity-[0.16] blur-[100px]"
+          className="animate-float-slow pointer-events-none fixed -right-32 -top-32 h-[32rem] w-[32rem] rounded-full opacity-[0.16] blur-[100px] print:hidden"
           style={{ background: "var(--gradient-brand)" }}
           aria-hidden
         />
         <div
-          className="animate-float-slower pointer-events-none fixed -bottom-32 -left-16 h-[26rem] w-[26rem] rounded-full bg-violet-500 opacity-[0.14] blur-[100px]"
+          className="animate-float-slower pointer-events-none fixed -bottom-32 -left-16 h-[26rem] w-[26rem] rounded-full bg-violet-500 opacity-[0.14] blur-[100px] print:hidden"
           aria-hidden
         />
         <div
-          className="animate-float-slow pointer-events-none fixed bottom-20 right-[10%] h-72 w-72 rounded-full bg-sky-400 opacity-[0.10] blur-[100px]"
+          className="animate-float-slow pointer-events-none fixed bottom-20 right-[10%] h-72 w-72 rounded-full bg-sky-400 opacity-[0.10] blur-[100px] print:hidden"
           aria-hidden
         />
-        <main className="relative flex-1 overflow-y-auto bg-gradient-to-b from-neutral-50 via-neutral-50 to-neutral-50/60 p-4 sm:p-6 lg:p-8">
+        <main className="relative flex-1 overflow-y-auto bg-gradient-to-b from-neutral-50 via-neutral-50 to-neutral-50/60 p-4 sm:p-6 lg:p-8 print:overflow-visible print:bg-white print:p-0">
           <div className="animate-fade-in-up">{children}</div>
         </main>
       </div>
+
+      <CommandPalette role={role} />
     </div>
   );
 }

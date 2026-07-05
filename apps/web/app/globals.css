@@ -112,6 +112,13 @@ body {
   .animate-fade-in-up {
     animation: fade-in-up 500ms ease-out both;
   }
+  .animate-grow-bar {
+    animation: grow-bar 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    transform-origin: left;
+  }
+  .animate-pulse-soft {
+    animation: pulse-soft 3s ease-in-out infinite;
+  }
 }
 
 @keyframes float-slow {
@@ -131,5 +138,23 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes grow-bar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
   }
 }
