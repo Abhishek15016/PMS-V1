@@ -37,13 +37,28 @@ export class DrivesController {
     private readonly eligibilityService: EligibilityService,
   ) {}
 
+  /** Statuses a VIEW-scoped caller (students) may see — DRAFT and CANCELLED are internal. */
+  private static readonly VIEW_VISIBLE_STATUSES = [
+    "SCHEDULED",
+    "ONGOING",
+    "COMPLETED",
+  ] as const;
+
   @Get()
   @RequirePermission("drives.manage")
   list(
     @CurrentUser() user: AccessTokenPayload,
     @Query() query: ListDrivesQueryDto,
+    @Req() req: Request,
   ): Promise<DriveWithRounds[]> {
-    return this.drivesService.findMany(user.tenantId, { jdId: query.jdId });
+    const statuses =
+      req.permissionScope === PermissionScope.VIEW
+        ? [...DrivesController.VIEW_VISIBLE_STATUSES]
+        : undefined;
+    return this.drivesService.findMany(user.tenantId, {
+      jdId: query.jdId,
+      statuses,
+    });
   }
 
   @Get(":id")
@@ -51,9 +66,19 @@ export class DrivesController {
   async findOne(
     @Param("id") id: string,
     @CurrentUser() user: AccessTokenPayload,
+    @Req() req: Request,
   ): Promise<DriveWithRounds> {
     const drive = await this.drivesService.findOne(user.tenantId, id);
     if (!drive) throw new NotFoundException();
+    if (
+      req.permissionScope === PermissionScope.VIEW &&
+      !DrivesController.VIEW_VISIBLE_STATUSES.includes(
+        drive.status as (typeof DrivesController.VIEW_VISIBLE_STATUSES)[number],
+      )
+    ) {
+      // 404, not 403 — a VIEW caller shouldn't learn that a draft exists.
+      throw new NotFoundException();
+    }
     return drive;
   }
 
@@ -62,7 +87,14 @@ export class DrivesController {
   getEligibility(
     @Param("id") driveId: string,
     @CurrentUser() user: AccessTokenPayload,
+    @Req() req: Request,
   ): Promise<DriveEligibilityResult> {
+    // Exposes a roster of other students' eligibility — staff only.
+    if (req.permissionScope === PermissionScope.VIEW) {
+      throw new ForbiddenException(
+        "Eligibility rosters are not available for this role",
+      );
+    }
     return this.eligibilityService.evaluateDriveBatch(user.tenantId, driveId);
   }
 
@@ -74,6 +106,9 @@ export class DrivesController {
     @Req() req: Request,
   ): Promise<Drive> {
     const scope = req.permissionScope!;
+    if (scope === PermissionScope.VIEW) {
+      throw new ForbiddenException("This role can only browse drives");
+    }
     // PROPOSE (Faculty Coordinator): can initiate a drive, but it always
     // lands in DRAFT — only FULL scope (TPO/Super Admin) can put a drive
     // into a scheduled/live state.
@@ -106,6 +141,9 @@ export class DrivesController {
     @Req() req: Request,
   ): Promise<Round> {
     const scope = req.permissionScope!;
+    if (scope === PermissionScope.VIEW) {
+      throw new ForbiddenException("This role can only browse drives");
+    }
     if (scope === PermissionScope.PROPOSE) {
       const drive = await this.drivesService.findOne(user.tenantId, driveId);
       if (!drive) throw new NotFoundException();

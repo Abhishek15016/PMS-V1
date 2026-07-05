@@ -31,6 +31,7 @@ import {
 import { useOffers } from "@/lib/offers/use-offers";
 import { useCompanies } from "@/lib/companies/use-companies";
 import { CompanyLogo } from "@/components/company-logo";
+import { StudentHome } from "@/components/student-home";
 
 const QUICK_LINKS: Array<{
   label: string;
@@ -391,6 +392,11 @@ export default function DashboardOverviewPage() {
   const visibleLinks = role ? QUICK_LINKS.filter((l) => l.roles.includes(role)) : QUICK_LINKS;
   const isLoadingSummary = isStaff ? filterOptions.isLoading || summary.isLoading : summary.isLoading;
 
+  // Students get a fully personalized home instead of the staff snapshot.
+  if (role === "STUDENT") {
+    return <StudentHome displayName={displayName ?? ""} />;
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <div className="relative overflow-hidden rounded-[var(--radius-2xl)] border border-neutral-200/80 bg-white p-8 shadow-[var(--shadow-sm)]">
@@ -448,7 +454,7 @@ export default function DashboardOverviewPage() {
           <StatCard label="Accepted" value={recruiterData.offersAccepted} icon={<Award className="h-4 w-4" />} tone="brand" />
           <StatCard label="Rejected" value={recruiterData.offersRejected} />
         </div>
-      ) : role === "STUDENT" ? null : (
+      ) : (
         <Card>
           <EmptyState
             title="No placement summary yet"

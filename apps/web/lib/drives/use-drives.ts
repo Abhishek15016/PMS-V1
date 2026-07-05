@@ -12,9 +12,8 @@ import {
 
 /**
  * Omit `jdId` to list every drive in the tenant (used by the applications drive
- * picker). GET /drives requires `drives.manage`, which STUDENT has no scope for
- * at all — callers rendering this for a student must pass `enabled: false` and
- * fall back to a plain text input instead (see ApplyDialog).
+ * picker and the student home's open-drives feed). Students hold VIEW scope on
+ * drives.manage: the API returns only SCHEDULED/ONGOING/COMPLETED drives to them.
  */
 export function useDrives(jdId?: string, enabled = true) {
   const accessToken = useAuthStore((s) => s.accessToken);

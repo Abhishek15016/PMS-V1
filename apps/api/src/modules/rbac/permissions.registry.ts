@@ -64,7 +64,9 @@ export const PERMISSIONS: Record<
     SUPER_ADMIN: FULL,
     TPO: FULL,
     FACULTY_COORD: PROPOSE,
-    STUDENT: NONE,
+    // VIEW, not NONE: students browse open drives to apply to them (the
+    // controller restricts VIEW to read-only, non-internal statuses).
+    STUDENT: VIEW,
     RECRUITER: NONE,
   },
   "jd.shortlist": {

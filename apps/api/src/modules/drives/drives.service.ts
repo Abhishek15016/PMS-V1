@@ -15,11 +15,14 @@ export class DrivesService {
 
   findMany(
     tenantId: string,
-    filters: { jdId?: string } = {},
+    filters: { jdId?: string; statuses?: DriveStatus[] } = {},
   ): Promise<DriveWithRounds[]> {
     return this.tenantPrisma.run(tenantId, (tx) =>
       tx.drive.findMany({
-        where: { jdId: filters.jdId },
+        where: {
+          jdId: filters.jdId,
+          status: filters.statuses ? { in: filters.statuses } : undefined,
+        },
         include: DRIVE_INCLUDE,
         orderBy: { createdAt: "desc" },
       }),

@@ -60,7 +60,7 @@ const EXPECTED: Record<PermissionResource, Record<Role, PermissionScope>> = {
     SUPER_ADMIN: FULL,
     TPO: FULL,
     FACULTY_COORD: PROPOSE,
-    STUDENT: NONE,
+    STUDENT: VIEW,
     RECRUITER: NONE,
   },
   "jd.shortlist": {

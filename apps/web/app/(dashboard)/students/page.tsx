@@ -27,6 +27,7 @@ import type { PlacementStatus, Student } from "@pms/types";
 import { useAuthStore } from "@/lib/auth/auth-store";
 import { useFilterOptions } from "@/lib/analytics/use-analytics";
 import { useStudents } from "@/lib/students/use-students";
+import { cgpaNumber, profileStrength } from "@/lib/students/profile-strength";
 import { ApiError } from "@/lib/api-client";
 
 /** DB Decimal fields serialize as strings and can carry float noise (e.g. "8.199999999999999") — round for display only. */
@@ -52,11 +53,6 @@ const STATUS_OPTIONS: Array<{ value: PlacementStatus | ""; label: string }> = [
 ];
 
 type SortKey = "name" | "cgpa-desc" | "cgpa-asc" | "roll";
-
-function cgpaNumber(s: Student): number {
-  const n = Number(s.cgpa);
-  return Number.isFinite(n) ? n : 0;
-}
 
 /** A student is "at risk" when they're unplaced AND carrying backlogs or a sub-6.5 CGPA — the cohort the placement cell chases first. */
 function isAtRisk(s: Student): boolean {
@@ -246,6 +242,19 @@ export default function StudentsPage() {
         </Card>
       )}
 
+      {isSelf ? (
+        students.isLoading ? (
+          <Card>
+            <Skeleton className="h-40 w-full" />
+          </Card>
+        ) : students.data?.[0] ? (
+          <MyProfile student={students.data[0]} />
+        ) : (
+          <Card>
+            <EmptyState title="Your student profile isn't set up yet" description="Ask your placement cell to import your record." />
+          </Card>
+        )
+      ) : (
       <Card className="p-0">
         {students.isLoading ? (
           <div className="space-y-2 p-6">
@@ -320,24 +329,73 @@ export default function StudentsPage() {
           />
         )}
       </Card>
+      )}
 
       {selected && <StudentDetailDialog student={selected} onClose={() => setSelected(null)} />}
     </div>
   );
 }
 
-/** 0–100 heuristic from academics the registrar already tracks — CGPA carries most weight; backlogs and gap years pull it down. */
-function profileStrength(s: Student): { score: number; label: string } {
-  const cgpa = cgpaNumber(s);
-  let score = Math.min(cgpa / 10, 1) * 70;
-  score += s.resumeUrl ? 10 : 0;
-  score += s.activeBacklogs === 0 ? 12 : Math.max(0, 12 - s.activeBacklogs * 6);
-  score += s.gapYears === 0 ? 8 : 2;
-  const rounded = Math.round(score);
-  return {
-    score: rounded,
-    label: rounded >= 80 ? "Strong" : rounded >= 60 ? "Solid" : rounded >= 45 ? "Developing" : "Needs attention",
-  };
+function MyProfile({ student }: { student: Student }) {
+  const strength = profileStrength(student);
+  return (
+    <div className="space-y-4">
+      <Card>
+        <div className="flex flex-wrap items-center gap-4">
+          <Avatar name={student.user.displayName} size="lg" />
+          <div className="min-w-0 flex-1">
+            <p className="text-lg font-semibold text-neutral-900">{student.user.displayName}</p>
+            <p className="text-sm text-neutral-500">
+              {student.rollNumber ?? "—"} · {student.department.name} · Batch {student.batch.label}
+            </p>
+          </div>
+          <Badge tone={STATUS_TONE[student.placementStatus]} dot>
+            {student.placementStatus.replace("_", " ")}
+          </Badge>
+        </div>
+
+        <div className="mt-5 rounded-[var(--radius-lg)] border border-neutral-100 bg-neutral-50/60 p-4">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium text-neutral-900">Profile strength</span>
+            <span className="font-semibold text-neutral-900">
+              {strength.score}/100 · {strength.label}
+            </span>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-neutral-200/70">
+            <div
+              className={cn(
+                "h-full rounded-full",
+                strength.score >= 80 ? "bg-emerald-500" : strength.score >= 60 ? "bg-brand-500" : "bg-amber-500",
+              )}
+              style={{ width: `${strength.score}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-neutral-500">
+            Weighted from CGPA, backlogs, gap years, and resume presence — the same signals the
+            eligibility engine checks{!student.resumeUrl && " (adding a resume gains 10 points)"}.
+          </p>
+        </div>
+      </Card>
+
+      <Card>
+        <h2 className="text-sm font-semibold text-neutral-900">Academic record</h2>
+        <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-4">
+          <Field label="CGPA" value={formatDecimal(student.cgpa)} />
+          <Field label="10th %" value={formatDecimal(student.tenthPercent)} />
+          <Field label="12th %" value={formatDecimal(student.twelfthPercent)} />
+          <Field label="Category" value={student.category ?? "—"} />
+          <Field label="Active backlogs" value={String(student.activeBacklogs)} />
+          <Field label="Backlog history" value={String(student.backlogHistory)} />
+          <Field label="Gap years" value={String(student.gapYears)} />
+          <Field label="Diploma entry" value={student.diplomaFlag ? "Yes" : "No"} />
+        </div>
+        <p className="mt-4 border-t border-neutral-100 pt-3 text-xs text-neutral-400">
+          These registrar-owned fields drive every eligibility decision. Spot an error? Contact your
+          placement cell — corrections are audit-logged.
+        </p>
+      </Card>
+    </div>
+  );
 }
 
 function StudentDetailDialog({ student, onClose }: { student: Student; onClose: () => void }) {

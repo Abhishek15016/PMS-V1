@@ -222,10 +222,7 @@ function ApplyDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
   const role = useAuthStore((s) => s.user?.role);
   const createApplication = useCreateApplication();
   const { show } = useToast();
-  // GET /drives requires drives.manage, which STUDENT has no scope for at all —
-  // students fall back to a plain drive-ID input instead of the picker.
-  const canListDrives = role !== "STUDENT";
-  const drives = useDrives(undefined, canListDrives);
+  const drives = useDrives();
   const companies = useCompanies();
   const students = useStudents();
   const [driveId, setDriveId] = useState("");
@@ -237,6 +234,15 @@ function ApplyDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
     companies.data?.forEach((c) => map.set(c.id, c.name));
     return map;
   }, [companies.data]);
+
+  // Students apply only to drives that are actually open; staff keep the full
+  // list (they sometimes backfill applications onto completed drives).
+  const pickableDrives = useMemo(() => {
+    const all = drives.data ?? [];
+    return role === "STUDENT"
+      ? all.filter((d) => d.status === "SCHEDULED" || d.status === "ONGOING")
+      : all;
+  }, [drives.data, role]);
 
   function reset() {
     setDriveId("");
@@ -267,27 +273,21 @@ function ApplyDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
           <Label htmlFor="driveId">Drive</Label>
-          {canListDrives ? (
-            <Select id="driveId" value={driveId} onChange={(e) => setDriveId(e.target.value)} required>
-              <option value="" disabled>
-                {drives.isLoading ? "Loading drives…" : "Select a drive"}
+          <Select id="driveId" value={driveId} onChange={(e) => setDriveId(e.target.value)} required>
+            <option value="" disabled>
+              {drives.isLoading
+                ? "Loading drives…"
+                : pickableDrives.length === 0
+                  ? "No open drives right now"
+                  : "Select a drive"}
+            </option>
+            {pickableDrives.map((d) => (
+              <option key={d.id} value={d.id}>
+                {companyNameById.get(d.jobDescription.companyId) ?? "Unknown company"} — {d.jobDescription.title} (₹
+                {d.jobDescription.ctcLpa} LPA) · {d.status}
               </option>
-              {drives.data?.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {companyNameById.get(d.jobDescription.companyId) ?? "Unknown company"} — {d.jobDescription.title} (₹
-                  {d.jobDescription.ctcLpa} LPA) · {d.status}
-                </option>
-              ))}
-            </Select>
-          ) : (
-            <Input
-              id="driveId"
-              value={driveId}
-              onChange={(e) => setDriveId(e.target.value)}
-              placeholder="Drive ID (shared by your placement office)"
-              required
-            />
-          )}
+            ))}
+          </Select>
         </div>
         {showStudentPicker && (
           <div>
