@@ -8,9 +8,9 @@ services:
       corepack enable &&
       corepack prepare pnpm@11.9.0 --activate &&
       pnpm install --frozen-lockfile &&
-      pnpm exec prisma generate --schema=packages/db/prisma/schema.prisma &&
+      pnpm --filter @pms/db exec prisma generate --schema=prisma/schema.prisma &&
       DATABASE_URL=$MIGRATION_DATABASE_URL DIRECT_URL=$MIGRATION_DATABASE_URL
-        pnpm exec prisma migrate deploy --schema=packages/db/prisma/schema.prisma &&
+        pnpm --filter @pms/db exec prisma migrate deploy --schema=prisma/schema.prisma &&
       pnpm exec turbo run build --filter=@pms/api...
     startCommand: pnpm --filter @pms/api start
     healthCheckPath: /health

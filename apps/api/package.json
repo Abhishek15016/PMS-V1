@@ -5,7 +5,7 @@
   "scripts": {
     "build": "nest build",
     "dev": "nest start --watch --exec \"node -r ts-node/register/transpile-only\"",
-    "start": "node dist/main.js",
+    "start": "node -r ts-node/register/transpile-only dist/main.js",
     "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "test": "jest --passWithNoTests",
