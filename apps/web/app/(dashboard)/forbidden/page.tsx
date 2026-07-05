@@ -40,7 +40,7 @@ export default function ForbiddenPage() {
           : "Your role doesn't have permission to view this page."}{" "}
         If you think this is wrong, ask your institution&apos;s TPO or Super Admin.
       </p>
-      <Link href="/" className="mt-6 inline-block">
+      <Link href="/dashboard" className="mt-6 inline-block">
         <Button variant="secondary">Back to overview</Button>
       </Link>
     </div>

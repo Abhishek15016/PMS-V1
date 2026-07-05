@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -11,7 +11,9 @@ import {
   GraduationCap,
   LayoutDashboard,
   LogOut,
+  Menu,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth/auth-store";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
@@ -27,7 +29,7 @@ const NAV_ITEMS: Array<{
 }> = [
   {
     label: "Overview",
-    href: "/",
+    href: "/dashboard",
     icon: LayoutDashboard,
     roles: ["SUPER_ADMIN", "TPO", "FACULTY_COORD", "STUDENT", "RECRUITER"],
   },
@@ -85,12 +87,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const storedUser = useAuthStore((s) => s.user);
   const logout = useLogout();
   const me = useCurrentUser();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     if (hasHydrated && !accessToken) {
       router.replace("/login");
     }
   }, [hasHydrated, accessToken, router]);
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileNavOpen]);
 
   if (!hasHydrated || !accessToken) {
     return null;
@@ -103,7 +118,49 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex flex-1">
-      <aside className="relative flex w-64 shrink-0 flex-col overflow-hidden border-r border-[var(--color-sidebar-border)] bg-[var(--color-sidebar)] px-3 py-5">
+      <div className="fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between border-b border-[var(--color-sidebar-border)] bg-[var(--color-sidebar)] px-4 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileNavOpen(true)}
+          aria-label="Open navigation menu"
+          className="-ml-2 flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] text-[var(--color-sidebar-foreground)] hover:bg-[var(--color-sidebar-hover-bg)] hover:text-white"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <div className="flex items-center gap-2">
+          <div
+            className="flex h-7 w-7 items-center justify-center rounded-[var(--radius-sm)] text-xs font-bold text-white"
+            style={{ background: "var(--gradient-brand)" }}
+          >
+            P
+          </div>
+          <span className="text-sm font-semibold tracking-tight text-white">PMS</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setMobileNavOpen(true)}
+          aria-label="Open account menu"
+          className="flex h-9 w-9 items-center justify-center rounded-full"
+        >
+          <Avatar name={displayName || email} size="sm" />
+        </button>
+      </div>
+
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-neutral-900/50 backdrop-blur-sm lg:hidden"
+          onClick={() => setMobileNavOpen(false)}
+          aria-hidden
+        />
+      )}
+
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex h-full w-64 max-w-[85vw] shrink-0 flex-col overflow-hidden border-r border-[var(--color-sidebar-border)] bg-[var(--color-sidebar)] px-3 py-5 transition-transform duration-200 ease-out",
+          "lg:sticky lg:top-0 lg:h-screen lg:translate-x-0",
+          mobileNavOpen ? "translate-x-0" : "-translate-x-full",
+        )}
+      >
         <div
           className="pointer-events-none absolute -left-16 -top-24 h-64 w-64 rounded-full opacity-20 blur-[80px]"
           style={{ background: "var(--gradient-brand)" }}
@@ -114,28 +171,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           aria-hidden
         />
 
-        <div className="relative mb-7 flex items-center gap-2.5 px-2">
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] text-sm font-bold text-white shadow-[var(--shadow-glow-brand)]"
-            style={{ background: "var(--gradient-brand)" }}
+        <div className="relative mb-7 flex items-center justify-between px-2">
+          <div className="flex items-center gap-2.5">
+            <div
+              className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] text-sm font-bold text-white shadow-[var(--shadow-glow-brand)]"
+              style={{ background: "var(--gradient-brand)" }}
+            >
+              P
+            </div>
+            <div>
+              <p className="text-sm font-semibold tracking-tight text-white">PMS</p>
+              <p className="text-[11px] text-[var(--color-sidebar-foreground-muted)]">
+                Placement Management
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setMobileNavOpen(false)}
+            aria-label="Close navigation menu"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-[var(--color-sidebar-foreground-muted)] hover:bg-[var(--color-sidebar-hover-bg)] hover:text-white lg:hidden"
           >
-            P
-          </div>
-          <div>
-            <p className="text-sm font-semibold tracking-tight text-white">PMS</p>
-            <p className="text-[11px] text-[var(--color-sidebar-foreground-muted)]">
-              Placement Management
-            </p>
-          </div>
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
-        <nav className="relative flex flex-1 flex-col gap-1 text-sm">
+        <nav className="relative flex flex-1 flex-col gap-1 overflow-y-auto text-sm">
           {visibleItems.map(({ label, href, icon: Icon }) => {
-            const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
+            const isActive = pathname === href || pathname.startsWith(`${href}/`);
             return (
               <Link
                 key={label}
                 href={href}
+                onClick={() => setMobileNavOpen(false)}
                 className={cn(
                   "group relative flex items-center gap-2.5 rounded-[var(--radius-md)] px-3 py-2 font-medium transition-all duration-150",
                   isActive
@@ -192,7 +260,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      <div className="relative flex flex-1 flex-col overflow-hidden">
+      <div className="relative flex flex-1 flex-col overflow-hidden pt-14 lg:pt-0">
         <div
           className="animate-float-slow pointer-events-none fixed -right-32 -top-32 h-[32rem] w-[32rem] rounded-full opacity-[0.16] blur-[100px]"
           style={{ background: "var(--gradient-brand)" }}
@@ -206,7 +274,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           className="animate-float-slow pointer-events-none fixed bottom-20 right-[10%] h-72 w-72 rounded-full bg-sky-400 opacity-[0.10] blur-[100px]"
           aria-hidden
         />
-        <main className="relative flex-1 overflow-y-auto bg-gradient-to-b from-neutral-50 via-neutral-50 to-neutral-50/60 p-6 sm:p-8">
+        <main className="relative flex-1 overflow-y-auto bg-gradient-to-b from-neutral-50 via-neutral-50 to-neutral-50/60 p-4 sm:p-6 lg:p-8">
           <div className="animate-fade-in-up">{children}</div>
         </main>
       </div>

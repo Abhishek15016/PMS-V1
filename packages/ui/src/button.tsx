@@ -11,7 +11,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary:
-    "bg-[var(--gradient-brand)] text-white shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-glow-brand)] hover:brightness-[1.06] focus-visible:outline-brand-600",
+    "bg-gradient-brand text-white shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-glow-brand)] hover:brightness-[1.06] focus-visible:outline-brand-600",
   secondary:
     "bg-white text-neutral-900 border border-neutral-200 shadow-[var(--shadow-xs)] hover:border-neutral-300 hover:bg-neutral-50 focus-visible:outline-brand-600",
   ghost: "bg-transparent text-neutral-700 hover:bg-neutral-100 focus-visible:outline-brand-600",

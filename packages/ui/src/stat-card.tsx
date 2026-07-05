@@ -40,7 +40,7 @@ export function StatCard({ label, value, icon, hint, trend, tone = "neutral", cl
             className={cn(
               "flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)]",
               tone === "brand"
-                ? "bg-[var(--gradient-brand)] text-white shadow-[var(--shadow-sm)]"
+                ? "bg-gradient-brand text-white shadow-[var(--shadow-sm)]"
                 : "bg-neutral-100 text-neutral-500",
             )}
           >

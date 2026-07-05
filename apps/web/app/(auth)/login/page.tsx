@@ -52,7 +52,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (hasHydrated && accessToken) {
-      router.replace("/");
+      router.replace("/dashboard");
     }
   }, [hasHydrated, accessToken, router]);
 
@@ -62,7 +62,7 @@ export default function LoginPage() {
     try {
       const result = await ssoCallback(tenantSlug, email);
       setSession(result);
-      router.replace("/");
+      router.replace("/dashboard");
     } catch (err) {
       setState({ kind: "error", message: errorMessage(err) });
     }
@@ -86,7 +86,7 @@ export default function LoginPage() {
       const { token } = await fetchDevMagicLinkToken(state.email);
       const result = await verifyMagicLink(token);
       setSession(result);
-      router.replace("/");
+      router.replace("/dashboard");
     } catch (err) {
       setState({ kind: "error", message: errorMessage(err) });
     }

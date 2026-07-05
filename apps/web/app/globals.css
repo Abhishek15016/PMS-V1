@@ -96,6 +96,13 @@ body {
     transform: translateY(-3px);
   }
 
+  /* Tailwind's bg-[var(--gradient-brand)] arbitrary value compiles to
+     background-color, which can't hold a linear-gradient() — the browser
+     silently drops the whole declaration. Use this class instead. */
+  .bg-gradient-brand {
+    background-image: var(--gradient-brand);
+  }
+
   .animate-float-slow {
     animation: float-slow 14s ease-in-out infinite;
   }
