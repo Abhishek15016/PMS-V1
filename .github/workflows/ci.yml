@@ -94,7 +94,16 @@ jobs:
         run: pnpm exec turbo run typecheck
 
       - name: Unit tests
-        run: pnpm exec turbo run test
+        run: pnpm exec turbo run test --filter=!@pms/db
+
+      # packages/db's RLS test needs the superuser role to seed fixtures
+      # across tenants (RLS blocks pms_app from doing that), then exercises
+      # the restricted pms_app role for the actual isolation assertions.
+      - name: DB tests (RLS isolation, superuser role)
+        run: pnpm exec turbo run test --filter=@pms/db
+        env:
+          DATABASE_URL: ${{ env.MIGRATION_DATABASE_URL }}
+          DIRECT_URL: ${{ env.MIGRATION_DATABASE_URL }}
 
       - name: e2e tests (api, real Postgres/Redis)
         working-directory: apps/api
