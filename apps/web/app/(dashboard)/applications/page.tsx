@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Plus } from "lucide-react";
+import { ClipboardList, Plus, Search } from "lucide-react";
 import {
   Badge,
   BadgeTone,
@@ -17,7 +17,9 @@ import {
   Skeleton,
   useToast,
 } from "@pms/ui";
-import type { Application, ApplicationStatus, RoundResultStatus } from "@pms/types";
+import type { Application, ApplicationStatus, Company, RoundResultStatus } from "@pms/types";
+import { CompanyLogo } from "@/components/company-logo";
+import { cn } from "@pms/ui";
 import { useAuthStore } from "@/lib/auth/auth-store";
 import { useCompanies } from "@/lib/companies/use-companies";
 import { useDrive, useDrives } from "@/lib/drives/use-drives";
@@ -42,10 +44,20 @@ const STATUS_TONE: Record<ApplicationStatus, BadgeTone> = {
 
 const TERMINAL_STATUSES: ApplicationStatus[] = ["SELECTED", "REJECTED", "WITHDRAWN"];
 
+const PIPELINE_ORDER: ApplicationStatus[] = [
+  "APPLIED",
+  "SHORTLISTED",
+  "IN_ROUND",
+  "SELECTED",
+  "REJECTED",
+  "WITHDRAWN",
+];
+
 export default function ApplicationsPage() {
   const router = useRouter();
   const role = useAuthStore((s) => s.user?.role);
   const applications = useApplications();
+  const companies = useCompanies();
   const canApply = role === "STUDENT" || role === "TPO" || role === "FACULTY_COORD";
   const isTpo = role === "TPO" || role === "SUPER_ADMIN";
 
@@ -60,6 +72,37 @@ export default function ApplicationsPage() {
   }, [applications.isError, applications.error, router]);
 
   const [showForm, setShowForm] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "">("");
+  const [query, setQuery] = useState("");
+
+  const companyById = useMemo(() => {
+    const map = new Map<string, Company>();
+    for (const c of companies.data ?? []) map.set(c.id, c);
+    return map;
+  }, [companies.data]);
+
+  const statusCounts = useMemo(() => {
+    const counts = new Map<ApplicationStatus, number>();
+    for (const a of applications.data ?? []) counts.set(a.status, (counts.get(a.status) ?? 0) + 1);
+    return counts;
+  }, [applications.data]);
+
+  const rows = useMemo(() => {
+    let list = applications.data ?? [];
+    if (statusFilter) list = list.filter((a) => a.status === statusFilter);
+    const q = query.trim().toLowerCase();
+    if (q) {
+      list = list.filter((a) => {
+        const companyName = companyById.get(a.drive.jobDescription.companyId)?.name ?? "";
+        return (
+          a.drive.jobDescription.title.toLowerCase().includes(q) ||
+          companyName.toLowerCase().includes(q) ||
+          (a.student.rollNumber ?? "").toLowerCase().includes(q)
+        );
+      });
+    }
+    return list;
+  }, [applications.data, statusFilter, query, companyById]);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -78,6 +121,54 @@ export default function ApplicationsPage() {
 
       <ApplyDialog open={showForm} onClose={() => setShowForm(false)} />
 
+      {(applications.data?.length ?? 0) > 0 && (
+        <Card>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setStatusFilter("")}
+              className={cn(
+                "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                statusFilter === ""
+                  ? "bg-neutral-900 text-white"
+                  : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
+              )}
+            >
+              All · {applications.data?.length ?? 0}
+            </button>
+            {PIPELINE_ORDER.map((s) => {
+              const count = statusCounts.get(s) ?? 0;
+              if (count === 0) return null;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setStatusFilter(statusFilter === s ? "" : s)}
+                  className={cn(
+                    "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                    statusFilter === s
+                      ? "bg-neutral-900 text-white"
+                      : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
+                  )}
+                >
+                  {s.replace("_", " ")} · {count}
+                </button>
+              );
+            })}
+            <div className="relative ml-auto min-w-44">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
+              <Input
+                className="h-9 pl-8 text-sm"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Company, role, or roll no…"
+                aria-label="Search applications"
+              />
+            </div>
+          </div>
+        </Card>
+      )}
+
       <Card className="p-0">
         {applications.isLoading ? (
           <div className="space-y-2 p-6">
@@ -90,19 +181,31 @@ export default function ApplicationsPage() {
               Couldn&apos;t load applications. Try again in a moment.
             </p>
           )
-        ) : applications.data && applications.data.length > 0 ? (
+        ) : rows.length > 0 ? (
           <div className="divide-y divide-neutral-100">
-            {applications.data.map((application) => (
-              <ApplicationRow key={application.id} application={application} isTpo={isTpo} />
+            {rows.map((application) => (
+              <ApplicationRow
+                key={application.id}
+                application={application}
+                isTpo={isTpo}
+                company={companyById.get(application.drive.jobDescription.companyId)}
+              />
             ))}
           </div>
         ) : (
           <EmptyState
             icon={<ClipboardList className="h-5 w-5" />}
-            title="No applications yet"
-            description={canApply ? "Apply to an open drive to get started." : undefined}
+            title={statusFilter || query ? "No applications match" : "No applications yet"}
+            description={
+              statusFilter || query
+                ? "Try clearing the search or status filter."
+                : canApply
+                  ? "Apply to an open drive to get started."
+                  : undefined
+            }
             action={
-              canApply && (
+              canApply &&
+              !(statusFilter || query) && (
                 <Button variant="secondary" onClick={() => setShowForm(true)}>
                   + Apply
                 </Button>
@@ -213,7 +316,15 @@ function ApplyDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
   );
 }
 
-function ApplicationRow({ application, isTpo }: { application: Application; isTpo: boolean }) {
+function ApplicationRow({
+  application,
+  isTpo,
+  company,
+}: {
+  application: Application;
+  isTpo: boolean;
+  company: Company | undefined;
+}) {
   const withdraw = useWithdrawApplication();
   const shortlist = useShortlistApplication();
   const { show } = useToast();
@@ -223,15 +334,20 @@ function ApplicationRow({ application, isTpo }: { application: Application; isTp
 
   return (
     <div className="p-4">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-medium text-neutral-900">
-            {application.drive.jobDescription.title}
-          </p>
-          <p className="mt-0.5 text-xs text-neutral-500">
-            Student {application.student.rollNumber ?? application.studentId} · ₹
-            {application.drive.jobDescription.ctcLpa} LPA
-          </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <CompanyLogo name={company?.name ?? "Drive"} website={company?.website} size="md" />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-neutral-900">
+              {company ? `${company.name} — ` : ""}
+              {application.drive.jobDescription.title}
+            </p>
+            <p className="mt-0.5 text-xs text-neutral-500">
+              {application.student.rollNumber ?? application.studentId} · ₹
+              {application.drive.jobDescription.ctcLpa} LPA · applied{" "}
+              {new Date(application.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+            </p>
+          </div>
         </div>
         <Badge tone={STATUS_TONE[application.status]} dot>
           {application.status.replace("_", " ")}
@@ -289,11 +405,29 @@ function ApplicationRow({ application, isTpo }: { application: Application; isTp
       )}
 
       {application.roundResults.length > 0 && (
-        <ul className="mt-2 flex flex-wrap gap-2 text-xs text-neutral-600">
-          {application.roundResults.map((r) => (
-            <li key={r.id} className="rounded-[var(--radius-sm)] bg-neutral-100 px-2 py-1">
-              {r.status}
-              {r.score != null ? ` (${r.score})` : ""}
+        <ul className="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs">
+          {application.roundResults.map((r, i) => (
+            <li key={r.id} className="flex items-center gap-1.5">
+              {i > 0 && <span className="h-px w-3 bg-neutral-200" aria-hidden />}
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium",
+                  r.status === "PASS"
+                    ? "bg-emerald-50 text-emerald-700"
+                    : r.status === "FAIL"
+                      ? "bg-rose-50 text-rose-700"
+                      : "bg-neutral-100 text-neutral-500",
+                )}
+              >
+                <span
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full",
+                    r.status === "PASS" ? "bg-emerald-500" : r.status === "FAIL" ? "bg-rose-500" : "bg-neutral-400",
+                  )}
+                />
+                R{i + 1} {r.status}
+                {r.score != null ? ` · ${r.score}` : ""}
+              </span>
             </li>
           ))}
         </ul>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Award, Plus } from "lucide-react";
+import { Award, Plus, Sparkles } from "lucide-react";
 import {
   Badge,
   BadgeTone,
@@ -17,7 +17,7 @@ import {
   Skeleton,
   useToast,
 } from "@pms/ui";
-import type { Offer, OfferStatus } from "@pms/types";
+import type { Company, Offer, OfferStatus, Slab } from "@pms/types";
 import { useAuthStore } from "@/lib/auth/auth-store";
 import {
   useAcceptOffer,
@@ -30,6 +30,8 @@ import {
 } from "@/lib/offers/use-offers";
 import { useApplications } from "@/lib/applications/use-applications";
 import { useStudents } from "@/lib/students/use-students";
+import { useCompanies } from "@/lib/companies/use-companies";
+import { CompanyLogo } from "@/components/company-logo";
 import { ApiError } from "@/lib/api-client";
 
 const STATUS_TONE: Record<OfferStatus, BadgeTone> = {
@@ -40,10 +42,33 @@ const STATUS_TONE: Record<OfferStatus, BadgeTone> = {
   REVOKED: "neutral",
 };
 
+const SLAB_TONE: Record<Slab, BadgeTone> = {
+  DREAM: "success",
+  SUPER_DREAM: "brand",
+  NON_DREAM: "neutral",
+};
+
+const STATUS_FILTERS: Array<{ value: OfferStatus | ""; label: string }> = [
+  { value: "", label: "All statuses" },
+  { value: "PENDING", label: "Pending approval" },
+  { value: "EXTENDED", label: "Extended" },
+  { value: "ACCEPTED", label: "Accepted" },
+  { value: "REJECTED", label: "Rejected" },
+  { value: "REVOKED", label: "Revoked" },
+];
+
+const SLAB_FILTERS: Array<{ value: Slab | ""; label: string }> = [
+  { value: "", label: "All slabs" },
+  { value: "DREAM", label: "Dream (₹25L+)" },
+  { value: "SUPER_DREAM", label: "Super Dream (₹8L+)" },
+  { value: "NON_DREAM", label: "Non-Dream" },
+];
+
 export default function OffersPage() {
   const router = useRouter();
   const role = useAuthStore((s) => s.user?.role);
   const offers = useOffers();
+  const companies = useCompanies();
   const isTpo = role === "TPO" || role === "SUPER_ADMIN";
   const isRecruiter = role === "RECRUITER";
   const isStudent = role === "STUDENT";
@@ -56,6 +81,37 @@ export default function OffersPage() {
   }, [offers.isError, offers.error, router]);
 
   const [showForm, setShowForm] = useState<"offer" | "ppo" | null>(null);
+  const [statusFilter, setStatusFilter] = useState<OfferStatus | "">("");
+  const [slabFilter, setSlabFilter] = useState<Slab | "">("");
+
+  const companyById = useMemo(() => {
+    const map = new Map<string, Company>();
+    for (const c of companies.data ?? []) map.set(c.id, c);
+    return map;
+  }, [companies.data]);
+
+  const rows = useMemo(() => {
+    let list = offers.data ?? [];
+    if (statusFilter) list = list.filter((o) => o.status === statusFilter);
+    if (slabFilter) list = list.filter((o) => o.slab === slabFilter);
+    return [...list].sort((a, b) => b.ctcLpa - a.ctcLpa);
+  }, [offers.data, statusFilter, slabFilter]);
+
+  const stats = useMemo(() => {
+    const all = offers.data ?? [];
+    if (all.length === 0) return null;
+    const accepted = all.filter((o) => o.status === "ACCEPTED");
+    const decided = all.filter((o) => o.status === "ACCEPTED" || o.status === "REJECTED");
+    const ppos = all.filter((o) => o.isPpo).length;
+    const top = Math.max(...all.map((o) => o.ctcLpa));
+    return {
+      total: all.length,
+      accepted: accepted.length,
+      acceptanceRate: decided.length > 0 ? (accepted.length / decided.length) * 100 : null,
+      ppos,
+      top,
+    };
+  }, [offers.data]);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -85,6 +141,61 @@ export default function OffersPage() {
       )}
       {isTpo && <CreatePpoDialog open={showForm === "ppo"} onClose={() => setShowForm(null)} />}
 
+      <Card>
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <Label htmlFor="offer-status-filter">Status</Label>
+            <Select
+              id="offer-status-filter"
+              className="mt-1 w-44"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as OfferStatus | "")}
+            >
+              {STATUS_FILTERS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="offer-slab-filter">Slab</Label>
+            <Select
+              id="offer-slab-filter"
+              className="mt-1 w-48"
+              value={slabFilter}
+              onChange={(e) => setSlabFilter(e.target.value as Slab | "")}
+            >
+              {SLAB_FILTERS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+          {stats && (
+            <div className="mb-1 ml-auto flex flex-wrap items-center gap-2 text-xs">
+              <span className="rounded-full bg-neutral-100 px-3 py-1 font-medium text-neutral-700">
+                {stats.total} offers
+              </span>
+              <span className="rounded-full bg-emerald-50 px-3 py-1 font-medium text-emerald-700">
+                {stats.accepted} accepted
+                {stats.acceptanceRate != null ? ` (${stats.acceptanceRate.toFixed(0)}%)` : ""}
+              </span>
+              {stats.ppos > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-3 py-1 font-medium text-brand-700">
+                  <Sparkles className="h-3 w-3" />
+                  {stats.ppos} PPOs
+                </span>
+              )}
+              <span className="rounded-full bg-amber-50 px-3 py-1 font-medium text-amber-700">
+                Top ₹{stats.top}L
+              </span>
+            </div>
+          )}
+        </div>
+      </Card>
+
       <Card className="p-0">
         {offers.isLoading ? (
           <div className="space-y-2 p-6">
@@ -95,17 +206,33 @@ export default function OffersPage() {
           offers.error instanceof ApiError && offers.error.status === 403 ? null : (
             <p className="p-6 text-sm text-[var(--color-danger)]">Couldn&apos;t load offers. Try again in a moment.</p>
           )
-        ) : offers.data && offers.data.length > 0 ? (
+        ) : rows.length > 0 ? (
           <div className="divide-y divide-neutral-100">
-            {offers.data.map((offer) => (
-              <OfferRow key={offer.id} offer={offer} isTpo={isTpo} isStudent={isStudent} />
+            {rows.map((offer) => (
+              <OfferRow
+                key={offer.id}
+                offer={offer}
+                isTpo={isTpo}
+                isStudent={isStudent}
+                company={
+                  offer.application
+                    ? companyById.get(offer.application.drive.jobDescription.companyId)
+                    : undefined
+                }
+              />
             ))}
           </div>
         ) : (
           <EmptyState
             icon={<Award className="h-5 w-5" />}
-            title="No offers yet"
-            description={canExtend ? "Extend an offer once a candidate clears the pipeline." : undefined}
+            title={statusFilter || slabFilter ? "No offers match the filters" : "No offers yet"}
+            description={
+              statusFilter || slabFilter
+                ? "Try clearing the filters."
+                : canExtend
+                  ? "Extend an offer once a candidate clears the pipeline."
+                  : undefined
+            }
           />
         )}
       </Card>
@@ -287,7 +414,17 @@ function CreatePpoDialog({ open, onClose }: { open: boolean; onClose: () => void
   );
 }
 
-function OfferRow({ offer, isTpo, isStudent }: { offer: Offer; isTpo: boolean; isStudent: boolean }) {
+function OfferRow({
+  offer,
+  isTpo,
+  isStudent,
+  company,
+}: {
+  offer: Offer;
+  isTpo: boolean;
+  isStudent: boolean;
+  company: Company | undefined;
+}) {
   const approve = useApproveOffer();
   const accept = useAcceptOffer();
   const reject = useRejectOffer();
@@ -298,17 +435,37 @@ function OfferRow({ offer, isTpo, isStudent }: { offer: Offer; isTpo: boolean; i
   const canAcceptReject = isStudent && offer.status === "EXTENDED";
   const canRevoke = isTpo && offer.status !== "REVOKED";
 
+  const title = offer.application?.drive.jobDescription.title ?? (offer.isPpo ? "PPO conversion" : "Offer");
+
   return (
     <div className="p-4">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-medium text-neutral-900">
-            {offer.application?.drive.jobDescription.title ?? (offer.isPpo ? "PPO conversion" : "Offer")}
-          </p>
-          <p className="mt-0.5 text-xs text-neutral-500">
-            ₹{offer.ctcLpa} LPA {offer.slab ? `· ${offer.slab.replace("_", " ")}` : ""}
-            {offer.isPpo ? " · PPO" : ""}
-          </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <CompanyLogo
+            name={company?.name ?? (offer.isPpo ? "PPO" : "Offer")}
+            website={company?.website}
+            size="md"
+          />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-neutral-900">
+              {company ? `${company.name} — ${title}` : title}
+            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              <span className="text-sm font-bold text-neutral-900">₹{offer.ctcLpa}L</span>
+              {offer.slab && (
+                <Badge tone={SLAB_TONE[offer.slab]}>{offer.slab.replace("_", " ")}</Badge>
+              )}
+              {offer.isPpo && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-semibold text-violet-700">
+                  <Sparkles className="h-3 w-3" />
+                  PPO
+                </span>
+              )}
+              <span className="text-xs text-neutral-400">
+                extended {new Date(offer.extendedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+              </span>
+            </div>
+          </div>
         </div>
         <Badge tone={STATUS_TONE[offer.status]} dot>
           {offer.status}

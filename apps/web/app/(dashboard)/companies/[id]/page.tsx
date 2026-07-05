@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Briefcase, CheckCircle2, ChevronRight, Plus, XCircle } from "lucide-react";
+import { ArrowLeft, Briefcase, CheckCircle2, ChevronRight, Globe, MapPin, Plus, Timer, XCircle } from "lucide-react";
 import {
   Badge,
   BadgeTone,
@@ -20,6 +20,7 @@ import {
 import type { Drive, DriveStatus, JobDescription } from "@pms/types";
 import { useAuthStore } from "@/lib/auth/auth-store";
 import { useCompany } from "@/lib/companies/use-companies";
+import { CompanyLogo } from "@/components/company-logo";
 import { useCreateJobDescription, useJobDescriptions } from "@/lib/job-descriptions/use-job-descriptions";
 import {
   useCreateDrive,
@@ -66,40 +67,35 @@ export default function CompanyDetailPage() {
           Companies
         </Link>
         {company.isLoading ? (
-          <Skeleton className="mt-2 h-8 w-64" />
+          <Skeleton className="mt-2 h-16 w-full max-w-md" />
         ) : company.data ? (
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-neutral-900">
-            {company.data.name}
-          </h1>
+          <div className="mt-3 flex items-center gap-4">
+            <CompanyLogo name={company.data.name} website={company.data.website} size="lg" />
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+                {company.data.name}
+              </h1>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-sm text-neutral-500">
+                {company.data.sector && <span>{company.data.sector}</span>}
+                {company.data.tier && (
+                  <Badge tone="brand">{company.data.tier.replace("tier-", "Tier ")}</Badge>
+                )}
+                {company.data.website && (
+                  <a
+                    href={company.data.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-brand-600 hover:underline"
+                  >
+                    <Globe className="h-3.5 w-3.5" />
+                    {company.data.website.replace(/^https?:\/\/(www\.)?/, "")}
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
         ) : null}
       </div>
-
-      <Card>
-        <h2 className="text-sm font-medium text-neutral-900">Details</h2>
-        {company.isLoading ? (
-          <div className="mt-3 space-y-2">
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-          </div>
-        ) : company.data ? (
-          <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
-            <div>
-              <dt className="text-xs uppercase tracking-wide text-neutral-400">Sector</dt>
-              <dd className="mt-0.5 text-neutral-900">{company.data.sector ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase tracking-wide text-neutral-400">Tier</dt>
-              <dd className="mt-0.5 text-neutral-900">
-                {company.data.tier ? <Badge tone="brand">{company.data.tier}</Badge> : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase tracking-wide text-neutral-400">Website</dt>
-              <dd className="mt-0.5 text-neutral-900">{company.data.website ?? "—"}</dd>
-            </div>
-          </dl>
-        ) : null}
-      </Card>
 
       {canSeeJDs && <JobDescriptionsSection companyId={id} canCreate={canCreateJD} />}
     </div>
@@ -263,21 +259,76 @@ function CreateJobDescriptionDialog({
   );
 }
 
+const BREAKUP_LABELS: Record<string, string> = {
+  fixedLpa: "Fixed",
+  variableLpa: "Variable",
+  esopsLpa: "ESOPs",
+  joiningBonusLpa: "Joining bonus",
+};
+
+const SLAB_TONE: Record<string, BadgeTone> = {
+  DREAM: "success",
+  SUPER_DREAM: "brand",
+  NON_DREAM: "neutral",
+};
+
+function CtcBreakupChips({ breakup }: { breakup: unknown }) {
+  if (!breakup || typeof breakup !== "object") return null;
+  const entries = Object.entries(breakup as Record<string, unknown>).filter(
+    ([, v]) => typeof v === "number" && v > 0,
+  );
+  if (entries.length === 0) return null;
+  return (
+    <div className="mt-2.5 flex flex-wrap gap-1.5">
+      {entries.map(([key, value]) => (
+        <span
+          key={key}
+          className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2.5 py-0.5 text-[11px] text-neutral-600"
+        >
+          <span className="font-medium text-neutral-800">₹{value as number}L</span>
+          {BREAKUP_LABELS[key] ?? key}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function JobDescriptionCard({ jd }: { jd: JobDescription }) {
   const role = useAuthStore((s) => s.user?.role);
   const canSeeDrives = role === "SUPER_ADMIN" || role === "TPO" || role === "FACULTY_COORD";
 
   return (
     <Card>
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="text-sm font-medium text-neutral-900">{jd.title}</h3>
-          <p className="mt-1 text-sm text-neutral-500">
-            ₹{jd.ctcLpa} LPA · {jd.eligiblePrograms.join(", ") || "no programs set"}
-            {jd.location ? ` · ${jd.location}` : ""}
-          </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold text-neutral-900">{jd.title}</h3>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-neutral-500">
+            <span className="text-base font-bold text-neutral-900">₹{jd.ctcLpa} LPA</span>
+            {jd.location && (
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5 text-neutral-400" />
+                {jd.location}
+              </span>
+            )}
+            {jd.bondMonths != null && jd.bondMonths > 0 && (
+              <span className="inline-flex items-center gap-1 text-amber-600">
+                <Timer className="h-3.5 w-3.5" />
+                {jd.bondMonths}-month bond
+              </span>
+            )}
+          </div>
+          <CtcBreakupChips breakup={jd.ctcBreakup} />
+          {jd.eligiblePrograms.length > 0 && (
+            <div className="mt-2.5 flex flex-wrap gap-1">
+              {jd.eligiblePrograms.map((p) => (
+                <span key={p} className="rounded-md bg-brand-50 px-2 py-0.5 text-[11px] font-medium text-brand-700">
+                  {p}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
-        {jd.slab && <Badge tone="brand">{jd.slab.replace("_", " ")}</Badge>}
+        {jd.slab && <Badge tone={SLAB_TONE[jd.slab] ?? "brand"}>{jd.slab.replace("_", " ")}</Badge>}
       </div>
 
       {canSeeDrives && <DrivesSection jdId={jd.id} />}

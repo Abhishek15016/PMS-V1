@@ -28,6 +28,9 @@ import {
   useUpcomingDrives,
   useYoy,
 } from "@/lib/analytics/use-analytics";
+import { useOffers } from "@/lib/offers/use-offers";
+import { useCompanies } from "@/lib/companies/use-companies";
+import { CompanyLogo } from "@/components/company-logo";
 
 const QUICK_LINKS: Array<{
   label: string;
@@ -204,8 +207,12 @@ function FunnelCard({ summary }: { summary: SummaryResponse }) {
         {FUNNEL_STAGES.map((stage, i) => {
           const value = summary[stage.field] as number;
           const prevValue = i > 0 ? (summary[FUNNEL_STAGES[i - 1]!.field] as number) : null;
+          // Placed can exceed Selected (PPOs never pass through an application),
+          // so a >100% "conversion" is meaningless — show nothing instead.
           const conversion =
-            prevValue != null && prevValue > 0 ? `${((value / prevValue) * 100).toFixed(0)}%` : null;
+            prevValue != null && prevValue > 0 && value <= prevValue
+              ? `${((value / prevValue) * 100).toFixed(0)}%`
+              : null;
           return (
             <div key={stage.label} className="flex items-center gap-3">
               <span className="w-20 shrink-0 text-xs text-neutral-500">{stage.label}</span>
@@ -258,6 +265,69 @@ function SignalsCard({ summary, yoy }: { summary: SummaryResponse; yoy: YoyRespo
           );
         })}
       </ul>
+    </Card>
+  );
+}
+
+/** Ranked live from accepted offers — new companies rise automatically as offers land. */
+function TopRecruitersCard() {
+  const offers = useOffers();
+  const companies = useCompanies();
+
+  const top = (() => {
+    if (!offers.data || !companies.data) return [];
+    const byCompany = new Map<string, { accepted: number; topCtc: number }>();
+    for (const o of offers.data) {
+      if (o.status !== "ACCEPTED" || !o.application) continue;
+      const companyId = o.application.drive.jobDescription.companyId;
+      const entry = byCompany.get(companyId) ?? { accepted: 0, topCtc: 0 };
+      entry.accepted += 1;
+      entry.topCtc = Math.max(entry.topCtc, o.ctcLpa);
+      byCompany.set(companyId, entry);
+    }
+    return [...byCompany.entries()]
+      .map(([id, agg]) => ({ company: companies.data!.find((c) => c.id === id), ...agg }))
+      .filter((e): e is typeof e & { company: NonNullable<(typeof e)["company"]> } => !!e.company)
+      .sort((a, b) => b.accepted - a.accepted || b.topCtc - a.topCtc)
+      .slice(0, 5);
+  })();
+
+  if (offers.isError || companies.isError) return null;
+
+  return (
+    <Card>
+      <div className="flex items-center gap-2">
+        <Building2 className="h-4 w-4 text-brand-500" />
+        <h2 className="text-sm font-semibold text-neutral-900">Top recruiters</h2>
+      </div>
+      {offers.isLoading || companies.isLoading ? (
+        <div className="mt-3 space-y-2">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      ) : top.length > 0 ? (
+        <ul className="mt-3 space-y-2">
+          {top.map(({ company, accepted, topCtc }, i) => (
+            <li key={company.id}>
+              <Link
+                href={`/companies/${company.id}`}
+                className="flex items-center gap-3 rounded-[var(--radius-md)] border border-neutral-100 p-2.5 transition-colors hover:border-neutral-200 hover:bg-neutral-50"
+              >
+                <span className="w-4 text-center text-xs font-bold text-neutral-300">{i + 1}</span>
+                <CompanyLogo name={company.name} website={company.website} size="sm" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-neutral-900">{company.name}</span>
+                  <span className="block text-xs text-neutral-500">
+                    {accepted} accepted · up to ₹{topCtc}L
+                  </span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-3 text-sm text-neutral-500">Rankings appear as offers get accepted.</p>
+      )}
     </Card>
   );
 }
@@ -418,6 +488,7 @@ export default function DashboardOverviewPage() {
           <div className="space-y-4">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">This week</h2>
             <UpcomingDrivesCard />
+            <TopRecruitersCard />
           </div>
         )}
       </div>
