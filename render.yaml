@@ -4,17 +4,12 @@ services:
     runtime: node
     plan: free
     region: oregon
-    buildCommand: >-
-      corepack enable &&
-      corepack prepare pnpm@11.9.0 --activate &&
-      pnpm install --frozen-lockfile &&
-      pnpm --filter @pms/db exec prisma generate --schema=prisma/schema.prisma &&
-      DATABASE_URL=$MIGRATION_DATABASE_URL DIRECT_URL=$MIGRATION_DATABASE_URL
-        pnpm --filter @pms/db exec prisma migrate deploy --schema=prisma/schema.prisma &&
-      pnpm exec turbo run build --filter=@pms/api...
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @pms/db exec prisma generate --schema=prisma/schema.prisma && DATABASE_URL=$MIGRATION_DATABASE_URL DIRECT_URL=$MIGRATION_DATABASE_URL pnpm --filter @pms/db exec prisma migrate deploy --schema=prisma/schema.prisma && pnpm exec turbo run build --filter=@pms/api...
     startCommand: pnpm --filter @pms/api start
     healthCheckPath: /health
     envVars:
+      - key: NODE_VERSION
+        value: 22.13.0
       - key: DATABASE_URL
         sync: false
       - key: DIRECT_URL
