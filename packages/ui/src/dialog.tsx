@@ -29,7 +29,7 @@ export function Dialog({ open, onClose, title, description, children, className 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/40 p-4 backdrop-blur-sm"
       onClick={onClose}
       role="presentation"
     >
@@ -41,7 +41,7 @@ export function Dialog({ open, onClose, title, description, children, className 
         aria-labelledby="dialog-title"
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          "w-full max-w-lg rounded-[var(--radius-lg)] border border-neutral-200 bg-white p-6 shadow-xl outline-none",
+          "w-full max-w-lg rounded-[var(--radius-xl)] border border-neutral-200/80 bg-white p-6 shadow-[var(--shadow-lg)] outline-none",
           "max-h-[85vh] overflow-y-auto",
           className,
         )}

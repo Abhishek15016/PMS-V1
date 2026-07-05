@@ -101,15 +101,25 @@ export default function DashboardOverviewPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
-      <PageHeader
-        title={`Welcome${displayName ? `, ${displayName.split(" ")[0]}` : ""}`}
-        description="Here's a snapshot of your placement season."
-      />
+      <div className="relative overflow-hidden rounded-[var(--radius-2xl)] border border-neutral-200/80 bg-white p-8 shadow-[var(--shadow-sm)]">
+        <div
+          className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full opacity-[0.10] blur-[90px]"
+          style={{ background: "var(--gradient-brand)" }}
+          aria-hidden
+        />
+        <div className="pointer-events-none absolute inset-0 bg-dot-pattern opacity-[0.5] [mask-image:linear-gradient(to_bottom,black,transparent)]" aria-hidden />
+        <div className="relative">
+          <PageHeader
+            title={`Welcome${displayName ? `, ${displayName.split(" ")[0]}` : ""}`}
+            description="Here's a snapshot of your placement season."
+          />
+        </div>
+      </div>
 
       {isLoadingSummary ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-[var(--radius-lg)]" />
+            <Skeleton key={i} className="h-28 w-full rounded-[var(--radius-xl)]" />
           ))}
         </div>
       ) : staffData ? (
@@ -145,19 +155,25 @@ export default function DashboardOverviewPage() {
       )}
 
       <div>
-        <h2 className="text-sm font-semibold text-neutral-900">Quick access</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Quick access</h2>
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {visibleLinks.map(({ label, description, href, icon: Icon }) => (
             <Link key={href} href={href}>
-              <Card className="h-full transition-shadow duration-150 hover:shadow-md">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] bg-brand-50 text-brand-600">
+              <Card interactive className="group h-full">
+                <div className="flex items-center gap-3.5">
+                  <div
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-white shadow-[var(--shadow-sm)] transition-transform duration-200 group-hover:scale-105"
+                    style={{ background: "var(--gradient-brand)" }}
+                  >
                     <Icon className="h-4 w-4" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-neutral-900">{label}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-neutral-900">{label}</p>
                     <p className="mt-0.5 text-xs text-neutral-500">{description}</p>
                   </div>
+                  <span className="text-neutral-300 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-brand-500">
+                    →
+                  </span>
                 </div>
               </Card>
             </Link>

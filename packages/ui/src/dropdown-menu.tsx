@@ -38,7 +38,7 @@ export function DropdownMenu({ trigger, children, align = "end", className }: Dr
         <div
           role="menu"
           className={cn(
-            "absolute z-40 mt-2 min-w-[12rem] rounded-[var(--radius-md)] border border-neutral-200 bg-white p-1 shadow-lg",
+            "absolute z-40 mt-2 min-w-[12rem] rounded-[var(--radius-lg)] border border-neutral-200/80 bg-white p-1.5 shadow-[var(--shadow-lg)]",
             align === "end" ? "right-0" : "left-0",
             className,
           )}
@@ -60,7 +60,7 @@ export function DropdownMenuItem({
       type="button"
       role="menuitem"
       className={cn(
-        "flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2.5 py-2 text-left text-sm text-neutral-700 transition-colors hover:bg-neutral-100",
+        "flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2.5 py-2 text-left text-sm text-neutral-700 transition-colors hover:bg-brand-50 hover:text-brand-700",
         className,
       )}
       {...props}

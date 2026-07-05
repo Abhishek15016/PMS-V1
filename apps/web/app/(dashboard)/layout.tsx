@@ -103,20 +103,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex flex-1">
-      <aside className="flex w-64 shrink-0 flex-col border-r border-[var(--color-sidebar-border)] bg-[var(--color-sidebar)] px-3 py-5">
-        <div className="mb-6 flex items-center gap-2.5 px-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] bg-brand-600 text-sm font-bold text-white">
+      <aside className="relative flex w-64 shrink-0 flex-col overflow-hidden border-r border-[var(--color-sidebar-border)] bg-[var(--color-sidebar)] px-3 py-5">
+        <div
+          className="pointer-events-none absolute -left-16 -top-24 h-64 w-64 rounded-full opacity-20 blur-[80px]"
+          style={{ background: "var(--gradient-brand)" }}
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute -bottom-24 -right-16 h-56 w-56 rounded-full bg-violet-600 opacity-[0.12] blur-[80px]"
+          aria-hidden
+        />
+
+        <div className="relative mb-7 flex items-center gap-2.5 px-2">
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] text-sm font-bold text-white shadow-[var(--shadow-glow-brand)]"
+            style={{ background: "var(--gradient-brand)" }}
+          >
             P
           </div>
           <div>
-            <p className="text-sm font-semibold text-white">PMS</p>
+            <p className="text-sm font-semibold tracking-tight text-white">PMS</p>
             <p className="text-[11px] text-[var(--color-sidebar-foreground-muted)]">
               Placement Management
             </p>
           </div>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-0.5 text-sm">
+        <nav className="relative flex flex-1 flex-col gap-1 text-sm">
           {visibleItems.map(({ label, href, icon: Icon }) => {
             const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
             return (
@@ -124,20 +137,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 key={label}
                 href={href}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-[var(--radius-md)] px-3 py-2 font-medium transition-colors duration-150",
+                  "group relative flex items-center gap-2.5 rounded-[var(--radius-md)] px-3 py-2 font-medium transition-all duration-150",
                   isActive
                     ? "bg-[var(--color-sidebar-active-bg)] text-white"
                     : "text-[var(--color-sidebar-foreground)] hover:bg-[var(--color-sidebar-hover-bg)] hover:text-white",
                 )}
               >
-                <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-brand-400" : "text-[var(--color-sidebar-foreground-muted)]")} />
+                {isActive && (
+                  <span
+                    className="absolute -left-3 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full"
+                    style={{ background: "var(--gradient-brand)" }}
+                    aria-hidden
+                  />
+                )}
+                <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-brand-400" : "text-[var(--color-sidebar-foreground-muted)] group-hover:text-brand-300")} />
                 {label}
               </Link>
             );
           })}
         </nav>
 
-        <div className="mt-auto border-t border-[var(--color-sidebar-border)] pt-3">
+        <div className="relative mt-auto border-t border-[var(--color-sidebar-border)] pt-3">
           {me.isLoading ? (
             <div className="flex items-center gap-2.5 px-2 py-1.5">
               <Skeleton className="h-9 w-9 rounded-full bg-[var(--color-sidebar-hover-bg)]" />
@@ -172,7 +192,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       <div className="flex flex-1 flex-col">
-        <main className="flex-1 bg-neutral-50 p-6 sm:p-8">{children}</main>
+        <main className="flex-1 bg-gradient-to-b from-neutral-50 via-neutral-50 to-neutral-50/60 p-6 sm:p-8">
+          {children}
+        </main>
       </div>
     </div>
   );

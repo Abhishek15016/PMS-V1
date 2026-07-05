@@ -95,9 +95,9 @@ export default function LoginPage() {
   const isLoading = state.kind === "loading";
 
   return (
-    <Card className="shadow-md">
-      <h1 className="text-xl font-semibold tracking-tight text-neutral-900">Sign in to PMS</h1>
-      <p className="mt-1 text-sm text-neutral-500">Enter your institutional credentials to continue.</p>
+    <Card className="shadow-[var(--shadow-lg)]">
+      <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Sign in to PMS</h1>
+      <p className="mt-1.5 text-sm text-neutral-500">Enter your institutional credentials to continue.</p>
 
       <Tabs
         className="mt-6 w-full"

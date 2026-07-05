@@ -32,8 +32,10 @@ export function Tabs({ items, value, onChange, className }: TabsProps) {
             aria-selected={isActive}
             onClick={() => onChange(item.value)}
             className={cn(
-              "rounded-[var(--radius-sm)] px-3 py-1.5 font-medium transition-colors duration-150",
-              isActive ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500 hover:text-neutral-800",
+              "rounded-[var(--radius-sm)] px-3.5 py-1.5 font-medium transition-all duration-150",
+              isActive
+                ? "bg-white text-brand-700 shadow-[var(--shadow-xs)]"
+                : "text-neutral-500 hover:text-neutral-800",
             )}
           >
             {item.label}

@@ -9,12 +9,12 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 }
 
 const TONE_CLASSES: Record<BadgeTone, string> = {
-  neutral: "bg-neutral-100 text-neutral-600",
-  brand: "bg-brand-50 text-brand-700",
-  info: "bg-[var(--color-info)]/10 text-[var(--color-info)]",
-  success: "bg-[var(--color-success)]/10 text-[var(--color-success)]",
-  warning: "bg-[var(--color-warning)]/10 text-[var(--color-warning)]",
-  danger: "bg-[var(--color-danger)]/10 text-[var(--color-danger)]",
+  neutral: "bg-neutral-100 text-neutral-600 ring-1 ring-inset ring-neutral-200",
+  brand: "bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-200",
+  info: "bg-[var(--color-info)]/10 text-[var(--color-info)] ring-1 ring-inset ring-[var(--color-info)]/20",
+  success: "bg-[var(--color-success)]/10 text-[var(--color-success)] ring-1 ring-inset ring-[var(--color-success)]/20",
+  warning: "bg-[var(--color-warning)]/10 text-[var(--color-warning)] ring-1 ring-inset ring-[var(--color-warning)]/20",
+  danger: "bg-[var(--color-danger)]/10 text-[var(--color-danger)] ring-1 ring-inset ring-[var(--color-danger)]/20",
 };
 
 const DOT_CLASSES: Record<BadgeTone, string> = {
@@ -31,13 +31,13 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
     <span
       ref={ref}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium",
         TONE_CLASSES[tone],
         className,
       )}
       {...props}
     >
-      {dot && <span className={cn("h-1.5 w-1.5 rounded-full", DOT_CLASSES[tone])} />}
+      {dot && <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", DOT_CLASSES[tone])} />}
       {children}
     </span>
   ),

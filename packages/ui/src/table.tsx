@@ -10,11 +10,11 @@ export function Table({ className, ...props }: React.TableHTMLAttributes<HTMLTab
 }
 
 export function TableHead({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return <thead className={cn(className)} {...props} />;
+  return <thead className={cn("bg-neutral-50/80", className)} {...props} />;
 }
 
 export function TableBody({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return <tbody className={cn("divide-y divide-neutral-100", className)} {...props} />;
+  return <tbody className={cn("divide-y divide-neutral-100 bg-white", className)} {...props} />;
 }
 
 export function TableRow({
@@ -25,7 +25,7 @@ export function TableRow({
   return (
     <tr
       className={cn(
-        interactive && "transition-colors duration-100 hover:bg-neutral-50",
+        interactive && "transition-colors duration-100 hover:bg-brand-50/40",
         className,
       )}
       {...props}
@@ -37,7 +37,7 @@ export function TableHeaderCell({ className, ...props }: React.ThHTMLAttributes<
   return (
     <th
       className={cn(
-        "border-b border-neutral-200 py-2.5 pr-4 text-xs font-semibold uppercase tracking-wide text-neutral-500",
+        "border-b border-neutral-200 py-3 pr-4 text-xs font-semibold uppercase tracking-wide text-neutral-500",
         className,
       )}
       {...props}
@@ -46,5 +46,5 @@ export function TableHeaderCell({ className, ...props }: React.ThHTMLAttributes<
 }
 
 export function TableCell({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td className={cn("py-3 pr-4 align-middle text-neutral-700", className)} {...props} />;
+  return <td className={cn("py-3.5 pr-4 align-middle text-neutral-700", className)} {...props} />;
 }

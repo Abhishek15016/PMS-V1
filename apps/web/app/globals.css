@@ -17,14 +17,18 @@
   --color-neutral-800: #27272a;
   --color-neutral-900: #18181b;
 
-  /* Brand accent — deep indigo (per-tenant override lands with SP-05 branding) */
+  /* Brand accent — indigo → violet (per-tenant override lands with SP-05 branding) */
   --color-brand-50: #eef2ff;
   --color-brand-100: #e0e7ff;
   --color-brand-200: #c7d2fe;
+  --color-brand-300: #a5b4fc;
   --color-brand-400: #818cf8;
   --color-brand-500: #6366f1;
   --color-brand-600: #4f46e5;
   --color-brand-700: #4338ca;
+  --color-brand-800: #3730a3;
+  --gradient-brand: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #6366f1 100%);
+  --gradient-brand-soft: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%);
 
   /* Semantic colors */
   --color-success: #16a34a;
@@ -34,18 +38,26 @@
 
   --radius-sm: 6px;
   --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
 
   --font-sans: var(--font-inter);
 
-  /* Sidebar — deep slate, distinct from the light content canvas */
-  --color-sidebar: #0f1116;
-  --color-sidebar-border: #23262f;
+  /* Elevation — soft, layered, low-contrast shadows for a premium feel */
+  --shadow-xs: 0 1px 2px rgba(24, 24, 27, 0.04);
+  --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.04), 0 4px 12px -4px rgba(24, 24, 27, 0.06);
+  --shadow-md: 0 2px 4px rgba(24, 24, 27, 0.04), 0 12px 24px -8px rgba(24, 24, 27, 0.08);
+  --shadow-lg: 0 4px 8px rgba(24, 24, 27, 0.04), 0 24px 48px -12px rgba(24, 24, 27, 0.12);
+  --shadow-glow-brand: 0 8px 30px -6px rgba(79, 70, 229, 0.35);
+
+  /* Sidebar — deep slate with a faint brand glow, distinct from the light canvas */
+  --color-sidebar: #0b0d14;
+  --color-sidebar-border: #1e2130;
   --color-sidebar-foreground: #d4d4d8;
-  --color-sidebar-foreground-muted: #71717a;
-  --color-sidebar-active-bg: #1c1e26;
-  --color-sidebar-hover-bg: #181a21;
+  --color-sidebar-foreground-muted: #6b6f80;
+  --color-sidebar-active-bg: #1c1e2c;
+  --color-sidebar-hover-bg: #15171f;
 }
 
 body {
@@ -56,5 +68,31 @@ body {
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
+  }
+
+  .bg-grid-pattern {
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .bg-dot-pattern {
+    background-image: radial-gradient(rgba(79, 70, 229, 0.18) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  .text-gradient-brand {
+    background: var(--gradient-brand);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .card-hover-lift {
+    transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+  }
+  .card-hover-lift:hover {
+    transform: translateY(-3px);
   }
 }

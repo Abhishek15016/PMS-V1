@@ -50,7 +50,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             key={t.id}
             role="status"
             className={cn(
-              "pointer-events-auto flex items-start gap-3 rounded-[var(--radius-md)] border border-neutral-200 bg-white p-3 shadow-lg",
+              "pointer-events-auto flex items-start gap-3 rounded-[var(--radius-lg)] border border-neutral-200/80 bg-white p-3.5 shadow-[var(--shadow-lg)]",
             )}
           >
             {TONE_ICON[t.tone]}
