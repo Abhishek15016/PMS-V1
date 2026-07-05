@@ -66,6 +66,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        working-directory: packages/db
+        run: pnpm exec prisma generate
+
       # Migrations (and only migrations/seed) run as the superuser role —
       # everything else in this job uses the restricted pms_app role via the
       # job-level DATABASE_URL, matching the three-role separation the app
