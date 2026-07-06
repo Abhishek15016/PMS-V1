@@ -19,7 +19,9 @@ export type PermissionResource =
   | "analytics.view"
   | "reports.accreditation"
   | "users.manage"
-  | "audit.log";
+  | "audit.log"
+  | "resume.manage"
+  | "mentorship.community";
 
 /**
  * Mirrors the matrix legend: ✅ full · 🔒 scoped (self/own-dept/own-record) ·

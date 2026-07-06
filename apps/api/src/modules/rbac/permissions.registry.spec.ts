@@ -119,6 +119,20 @@ const EXPECTED: Record<PermissionResource, Record<Role, PermissionScope>> = {
     STUDENT: NONE,
     RECRUITER: NONE,
   },
+  "resume.manage": {
+    SUPER_ADMIN: VIEW,
+    TPO: VIEW,
+    FACULTY_COORD: VIEW,
+    STUDENT: SELF,
+    RECRUITER: NONE,
+  },
+  "mentorship.community": {
+    SUPER_ADMIN: FULL,
+    TPO: FULL,
+    FACULTY_COORD: VIEW,
+    STUDENT: SELF,
+    RECRUITER: NONE,
+  },
 };
 
 describe("permissions registry (§2 RBAC matrix)", () => {

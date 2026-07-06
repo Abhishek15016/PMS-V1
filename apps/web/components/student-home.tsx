@@ -9,6 +9,8 @@ import {
   CalendarDays,
   CheckCircle2,
   ClipboardList,
+  FileText,
+  HeartHandshake,
   MapPin,
   PartyPopper,
   Sparkles,
@@ -385,6 +387,52 @@ export function StudentHome({ displayName }: { displayName: string }) {
             </p>
           )}
         </Card>
+      </div>
+
+      {/* ── Career tools ── */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Link href="/resume">
+          <Card interactive className="group h-full">
+            <div className="flex items-center gap-3.5">
+              <div
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-white shadow-[var(--shadow-sm)] transition-transform duration-200 group-hover:scale-105"
+                style={{ background: "var(--gradient-brand)" }}
+              >
+                <FileText className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-neutral-900">Resume Studio</p>
+                <p className="mt-0.5 text-xs text-neutral-500">
+                  Build, score against real drives (ATS), export a print-perfect PDF
+                </p>
+              </div>
+              <span className="text-neutral-300 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-brand-500">
+                →
+              </span>
+            </div>
+          </Card>
+        </Link>
+        <Link href="/mentors">
+          <Card interactive className="group h-full">
+            <div className="flex items-center gap-3.5">
+              <div
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-white shadow-[var(--shadow-sm)] transition-transform duration-200 group-hover:scale-105"
+                style={{ background: "var(--gradient-brand)" }}
+              >
+                <HeartHandshake className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-neutral-900">Mentor Connect</p>
+                <p className="mt-0.5 text-xs text-neutral-500">
+                  Ask placed seniors company-specific questions on the Q&amp;A board
+                </p>
+              </div>
+              <span className="text-neutral-300 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-brand-500">
+                →
+              </span>
+            </div>
+          </Card>
+        </Link>
       </div>
     </div>
   );

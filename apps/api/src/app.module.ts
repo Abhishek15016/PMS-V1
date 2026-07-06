@@ -8,6 +8,9 @@ import { TokenModule } from "./common/token/token.module";
 import { DatabaseModule } from "./database/database.module";
 import { HealthController } from "./health/health.controller";
 import { AnalyticsModule } from "./modules/analytics/analytics.module";
+import { InstitutionsModule } from "./modules/institutions/institutions.module";
+import { MentorshipModule } from "./modules/mentorship/mentorship.module";
+import { ResumesModule } from "./modules/resumes/resumes.module";
 import { ApplicationsModule } from "./modules/applications/applications.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { CompaniesModule } from "./modules/companies/companies.module";
@@ -61,6 +64,9 @@ import { StudentsModule } from "./modules/students/students.module";
     OffersModule,
     ApplicationsModule,
     AnalyticsModule,
+    InstitutionsModule,
+    ResumesModule,
+    MentorshipModule,
   ],
   controllers: [HealthController],
 })

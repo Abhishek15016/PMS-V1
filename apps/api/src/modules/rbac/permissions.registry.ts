@@ -125,6 +125,24 @@ export const PERMISSIONS: Record<
     STUDENT: NONE,
     RECRUITER: NONE,
   },
+  // Students own their resume (SELF); staff may read them when screening.
+  "resume.manage": {
+    SUPER_ADMIN: VIEW,
+    TPO: VIEW,
+    FACULTY_COORD: VIEW,
+    STUDENT: SELF,
+    RECRUITER: NONE,
+  },
+  // Mentor Connect Q&A board: students read the tenant board and write
+  // their own posts (SELF, enforced in the service); staff hold FULL for
+  // moderation (close/answer any thread).
+  "mentorship.community": {
+    SUPER_ADMIN: FULL,
+    TPO: FULL,
+    FACULTY_COORD: VIEW,
+    STUDENT: SELF,
+    RECRUITER: NONE,
+  },
 };
 
 export function resolvePermissionScope(

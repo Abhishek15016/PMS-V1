@@ -4,7 +4,9 @@ import {
   Building2,
   ClipboardList,
   FileCheck2,
+  FileText,
   GraduationCap,
+  HeartHandshake,
   LayoutDashboard,
   ShieldCheck,
 } from "lucide-react";
@@ -75,6 +77,20 @@ export const NAV_ITEMS: NavItem[] = [
     icon: FileCheck2,
     roles: ["SUPER_ADMIN", "TPO", "FACULTY_COORD"],
     keywords: ["nirf", "naac", "aicte", "accreditation", "export", "pdf", "print"],
+  },
+  {
+    label: "Resume Studio",
+    href: "/resume",
+    icon: FileText,
+    roles: ["STUDENT"],
+    keywords: ["cv", "ats", "resume", "interview prep", "linkedin", "github", "leetcode"],
+  },
+  {
+    label: "Mentor Connect",
+    href: "/mentors",
+    icon: HeartHandshake,
+    roles: ["SUPER_ADMIN", "TPO", "FACULTY_COORD", "STUDENT"],
+    keywords: ["mentorship", "seniors", "alumni", "questions", "q&a", "community"],
   },
 ];
 

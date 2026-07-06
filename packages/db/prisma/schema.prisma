@@ -53,6 +53,9 @@ model Institution {
   auditEvents            AuditEvent[]
   importJobs             ImportJob[]
   placementSummaries     PlacementSummary[]
+  resumes                Resume[]
+  mentorThreads          MentorThread[]
+  mentorReplies          MentorReply[]
 
   @@map("institutions")
 }
@@ -80,6 +83,7 @@ model User {
   company        Company?    @relation(fields: [companyId], references: [id])
   sessions       Session[]
   studentProfile Student?
+  mentorReplies  MentorReply[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -187,6 +191,15 @@ model Student {
   category        String? // institution-defined (general/reserved categories); free text, not a fixed enum
   contactPhone    String?         @map("contact_phone")
   resumeUrl       String?         @map("resume_url")
+  linkedinUrl     String?         @map("linkedin_url")
+  githubUrl       String?         @map("github_url")
+  leetcodeUrl     String?         @map("leetcode_url")
+  codeforcesUrl   String?         @map("codeforces_url")
+  /// Placed students can opt in as mentors for the tenant's Mentor Connect
+  /// board; headline is their one-line pitch ("SDE @ Razorpay, ask me
+  /// about fintech interviews").
+  mentorOptIn     Boolean         @default(false) @map("mentor_opt_in")
+  mentorHeadline  String?         @map("mentor_headline")
   placementStatus PlacementStatus @default(UNPLACED) @map("placement_status")
   createdAt       DateTime        @default(now()) @map("created_at")
   updatedAt       DateTime        @updatedAt @map("updated_at")
@@ -200,10 +213,79 @@ model Student {
   applications           Application[]
   offers                 Offer[]
   eligibilityEvaluations EligibilityEvaluation[]
+  resume                 Resume?
+  authoredThreads        MentorThread[]          @relation("ThreadAuthor")
+  directedThreads        MentorThread[]          @relation("ThreadMentor")
 
   @@index([tenantId])
   @@index([tenantId, departmentId])
   @@map("students")
+}
+
+/// Structured resume content (one per student), rendered to an A4 print
+/// template by the web Resume Studio. Content is a versionable Json blob —
+/// section shapes are validated by @pms/types ResumeContentSchema, not the
+/// DB, so the builder can evolve without migrations.
+model Resume {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  studentId String   @unique @map("student_id")
+  content   Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  institution Institution @relation(fields: [tenantId], references: [id])
+  student     Student     @relation(fields: [studentId], references: [id])
+
+  @@index([tenantId])
+  @@map("resumes")
+}
+
+enum ThreadStatus {
+  OPEN
+  ANSWERED
+}
+
+/// Mentor Connect: an async Q&A thread from an (usually unplaced) student,
+/// optionally directed at a specific opted-in mentor, visible tenant-wide.
+/// Deliberately a public board, not DMs — staff (FULL scope) can moderate,
+/// and every post is attributable.
+model MentorThread {
+  id              String       @id @default(cuid())
+  tenantId        String       @map("tenant_id")
+  authorStudentId String       @map("author_student_id")
+  mentorStudentId String?      @map("mentor_student_id")
+  title           String
+  body            String
+  status          ThreadStatus @default(OPEN)
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  institution Institution   @relation(fields: [tenantId], references: [id])
+  author      Student       @relation("ThreadAuthor", fields: [authorStudentId], references: [id])
+  mentor      Student?      @relation("ThreadMentor", fields: [mentorStudentId], references: [id])
+  replies     MentorReply[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("mentor_threads")
+}
+
+model MentorReply {
+  id           String   @id @default(cuid())
+  tenantId     String   @map("tenant_id")
+  threadId     String   @map("thread_id")
+  authorUserId String   @map("author_user_id")
+  body         String
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  institution Institution  @relation(fields: [tenantId], references: [id])
+  thread      MentorThread @relation(fields: [threadId], references: [id])
+  author      User         @relation(fields: [authorUserId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, threadId])
+  @@map("mentor_replies")
 }
 
 model Company {

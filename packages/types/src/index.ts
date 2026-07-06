@@ -10,3 +10,6 @@ export * from "./offers";
 export * from "./analytics";
 export * from "./students";
 export * from "./eligibility";
+export * from "./resume";
+export * from "./mentorship";
+export * from "./institutions";

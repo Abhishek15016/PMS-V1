@@ -53,4 +53,30 @@ export class StudentsService {
       tx.student.findUnique({ where: { userId }, include: STUDENT_INCLUDE }),
     );
   }
+
+  /** Student self-service: only the four public profile links — every
+   * registrar-owned field (CGPA, backlogs, …) stays locked from self-edit. */
+  updateLinksByUserId(
+    tenantId: string,
+    userId: string,
+    links: {
+      linkedinUrl?: string | null;
+      githubUrl?: string | null;
+      leetcodeUrl?: string | null;
+      codeforcesUrl?: string | null;
+    },
+  ): Promise<StudentWithRelations> {
+    return this.tenantPrisma.run(tenantId, (tx) =>
+      tx.student.update({
+        where: { userId },
+        data: {
+          linkedinUrl: links.linkedinUrl,
+          githubUrl: links.githubUrl,
+          leetcodeUrl: links.leetcodeUrl,
+          codeforcesUrl: links.codeforcesUrl,
+        },
+        include: STUDENT_INCLUDE,
+      }),
+    );
+  }
 }

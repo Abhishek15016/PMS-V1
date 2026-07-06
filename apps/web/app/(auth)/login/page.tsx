@@ -56,6 +56,14 @@ export default function LoginPage() {
     }
   }, [hasHydrated, accessToken, router]);
 
+  // Deep link from institution onboarding: /login?tenant=<slug>. Read via
+  // window.location (not useSearchParams) to keep this page statically
+  // prerenderable without a Suspense boundary.
+  useEffect(() => {
+    const tenant = new URLSearchParams(window.location.search).get("tenant");
+    if (tenant) setTenantSlug(tenant);
+  }, []);
+
   async function handleStaffSubmit(e: React.FormEvent) {
     e.preventDefault();
     setState({ kind: "loading" });
@@ -181,6 +189,13 @@ export default function LoginPage() {
 
           <p className="text-xs text-neutral-400">
             Dev-mode seeded accounts: {DEMO_EMAILS.join(", ")}
+          </p>
+
+          <p className="border-t border-neutral-100 pt-3 text-center text-xs text-neutral-500">
+            New institution?{" "}
+            <a href="/register" className="font-medium text-brand-600 hover:underline">
+              Register your workspace
+            </a>
           </p>
         </form>
       )}

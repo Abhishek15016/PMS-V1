@@ -1,9 +1,11 @@
 import {
+  Body,
   Controller,
   ForbiddenException,
   Get,
   NotFoundException,
   Param,
+  Patch,
   Query,
   Req,
   UseGuards,
@@ -20,6 +22,7 @@ import {
 } from "../../common/utils/department-scope.util";
 import { PermissionScope } from "../../modules/rbac/permission.types";
 import { ListStudentsQueryDto } from "./dto/list-students.query.dto";
+import { UpdateStudentLinksDto } from "./dto/update-student-links.dto";
 import { StudentsService, StudentWithRelations } from "./students.service";
 
 @Controller("students")
@@ -56,6 +59,28 @@ export class StudentsController {
       departmentId,
       batchId: query.batchId,
     });
+  }
+
+  /** Student self-service for public profile links only; the SELF scope
+   * check plus updating strictly by the caller's own userId means no other
+   * record is reachable, and the DTO whitelists exactly four fields. */
+  @Patch("me/links")
+  @RequirePermission("students.records")
+  updateMyLinks(
+    @CurrentUser() user: AccessTokenPayload,
+    @Req() req: Request,
+    @Body() dto: UpdateStudentLinksDto,
+  ): Promise<StudentWithRelations> {
+    if (req.permissionScope !== PermissionScope.SELF) {
+      throw new ForbiddenException(
+        "Profile links are edited by the student who owns them",
+      );
+    }
+    return this.studentsService.updateLinksByUserId(
+      user.tenantId,
+      user.sub,
+      dto,
+    );
   }
 
   @Get(":id")
