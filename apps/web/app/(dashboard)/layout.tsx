@@ -24,7 +24,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (hasHydrated && !accessToken) {
-      router.replace("/login");
+      // Landing, not login: the installed app launches at /dashboard, and a
+      // logged-out open should read as "the product", not a password wall.
+      router.replace("/");
     }
   }, [hasHydrated, accessToken, router]);
 

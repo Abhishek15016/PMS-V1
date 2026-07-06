@@ -4,12 +4,20 @@ import { useEffect, useState } from "react";
 import { Logo } from "@pms/ui";
 
 /**
- * Branded boot screen shown while the client hydrates. In the installed
- * app (display-mode: standalone — the TWA/PWA) it holds for a beat so the
- * opening reads as an intro; in a normal browser tab it only covers the
- * actual hydration wait, then gets out of the way.
+ * Branded boot screen. Two modes:
+ * - default: shown while the client hydrates (covers the boot flash), holds
+ *   a beat in the installed app, then fades.
+ * - standaloneOnly: rendered from the FIRST PAINT but only inside the
+ *   installed app, via a CSS display-mode media query (no JS wait, no
+ *   hydration mismatch) — browsers never see it at all.
  */
-export function AppSplash({ ready }: { ready: boolean }) {
+export function AppSplash({
+  ready,
+  standaloneOnly = false,
+}: {
+  ready: boolean;
+  standaloneOnly?: boolean;
+}) {
   const [fading, setFading] = useState(false);
   const [gone, setGone] = useState(false);
 
@@ -18,9 +26,13 @@ export function AppSplash({ ready }: { ready: boolean }) {
     const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       window.matchMedia("(display-mode: fullscreen)").matches;
-    const hold = setTimeout(() => setFading(true), standalone ? 1200 : 0);
+    if (standaloneOnly && !standalone) {
+      setGone(true);
+      return;
+    }
+    const hold = setTimeout(() => setFading(true), standalone ? 1400 : 0);
     return () => clearTimeout(hold);
-  }, [ready]);
+  }, [ready, standaloneOnly]);
 
   useEffect(() => {
     if (!fading) return;
@@ -32,7 +44,12 @@ export function AppSplash({ ready }: { ready: boolean }) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden bg-[var(--color-sidebar)] transition-opacity duration-500"
+      className={
+        (standaloneOnly
+          ? "hidden [@media(display-mode:standalone)]:flex [@media(display-mode:fullscreen)]:flex "
+          : "flex ") +
+        "fixed inset-0 z-[100] flex-col items-center justify-center overflow-hidden bg-[var(--color-sidebar)] transition-opacity duration-500"
+      }
       style={{ opacity: fading ? 0 : 1 }}
       aria-hidden
     >
