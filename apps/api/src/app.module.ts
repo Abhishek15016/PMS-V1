@@ -10,6 +10,7 @@ import { HealthController } from "./health/health.controller";
 import { AnalyticsModule } from "./modules/analytics/analytics.module";
 import { InstitutionsModule } from "./modules/institutions/institutions.module";
 import { MentorshipModule } from "./modules/mentorship/mentorship.module";
+import { OperatorModule } from "./modules/operator/operator.module";
 import { ResumesModule } from "./modules/resumes/resumes.module";
 import { ApplicationsModule } from "./modules/applications/applications.module";
 import { AuthModule } from "./modules/auth/auth.module";
@@ -67,6 +68,7 @@ import { StudentsModule } from "./modules/students/students.module";
     InstitutionsModule,
     ResumesModule,
     MentorshipModule,
+    OperatorModule,
   ],
   controllers: [HealthController],
 })

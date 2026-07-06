@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
@@ -169,6 +170,15 @@ export class AuthService {
     const institution = await this.bootstrap.findInstitutionBySlug(slug);
     if (!institution) {
       throw new NotFoundException("Institution not found");
+    }
+    // Platform-level kill switch (operator console): a suspended client's
+    // users can't start new sessions. Existing refresh tokens ride out
+    // their 7-day TTL — acceptable for a billing-grade suspension, not a
+    // security revocation.
+    if (institution.status !== "ACTIVE") {
+      throw new ForbiddenException(
+        "This institution's access is suspended — contact your platform provider",
+      );
     }
     return institution;
   }

@@ -13,3 +13,20 @@ export const RegisterInstitutionResultSchema = z.object({
   adminEmail: z.string(),
 });
 export type RegisterInstitutionResult = z.infer<typeof RegisterInstitutionResultSchema>;
+
+/** Vendor operator console: one row per client institute, counts only. */
+export const InstitutionSummarySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  slug: z.string(),
+  status: z.string(),
+  createdAt: z.string(),
+  counts: z.object({
+    students: z.number(),
+    users: z.number(),
+    companies: z.number(),
+    drives: z.number(),
+    acceptedOffers: z.number(),
+  }),
+});
+export type InstitutionSummary = z.infer<typeof InstitutionSummarySchema>;

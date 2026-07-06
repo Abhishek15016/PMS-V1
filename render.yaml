@@ -34,3 +34,9 @@ services:
         value: stub
       - key: CORS_ORIGIN
         sync: false
+      # Vendor operator console (/operator): auto-generated on Blueprint
+      # sync; read the value from the Render dashboard to unlock the
+      # console. Cross-tenant reads fall back to MIGRATION_DATABASE_URL
+      # unless PLATFORM_DATABASE_URL is set explicitly.
+      - key: PLATFORM_ADMIN_KEY
+        generateValue: true
