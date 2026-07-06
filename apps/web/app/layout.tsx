@@ -1,12 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { ServiceWorkerRegister } from "@/components/sw-register";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
 });
+
+export const viewport: Viewport = {
+  themeColor: "#4f46e5",
+};
 
 export const metadata: Metadata = {
   title: "PMS — The Placement OS for Indian Institutions",
@@ -22,6 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans">
+        <ServiceWorkerRegister />
         <Providers>{children}</Providers>
       </body>
     </html>
