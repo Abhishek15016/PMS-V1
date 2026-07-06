@@ -9,6 +9,7 @@ import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { useLogout } from "@/lib/auth/use-logout";
 import { NAV_ITEMS, ROLE_LABELS } from "@/lib/navigation";
 import { CommandPalette } from "@/components/command-palette";
+import { AppSplash } from "@/components/app-splash";
 import { Avatar, DropdownMenu, DropdownMenuItem, DropdownMenuSeparator, Logo, Skeleton, cn } from "@pms/ui";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -39,16 +40,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
   }, [mobileNavOpen]);
 
-  if (!hasHydrated || !accessToken) {
-    return null;
-  }
+  const booted = hasHydrated && !!accessToken;
 
   const role = me.data?.role ?? storedUser?.role;
   const displayName = storedUser?.displayName ?? "";
   const email = storedUser?.email ?? "";
   const visibleItems = role ? NAV_ITEMS.filter((item) => item.roles.includes(role)) : NAV_ITEMS;
 
+  // The splash keeps one stable tree position (first child of the fragment)
+  // so its entrance animation never restarts when the layout content mounts
+  // beneath it.
   return (
+    <>
+      <AppSplash ready={booted} />
+      {booted && (
     <div className="flex flex-1">
       <div className="fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between border-b border-[var(--color-sidebar-border)] bg-[var(--color-sidebar)] px-4 lg:hidden print:hidden">
         <button
@@ -216,5 +221,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <CommandPalette role={role} />
     </div>
+      )}
+    </>
   );
 }

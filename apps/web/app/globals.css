@@ -119,6 +119,18 @@ body {
   .animate-pulse-soft {
     animation: pulse-soft 3s ease-in-out infinite;
   }
+  .animate-splash-logo {
+    animation: splash-logo 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .animate-splash-text {
+    animation: fade-in-up 700ms ease-out 350ms both;
+  }
+  .animate-grid-fly {
+    animation: grid-fly 1.4s linear infinite;
+  }
+  .animate-splash-dot {
+    animation: pulse-soft 1.2s ease-in-out infinite;
+  }
 }
 
 @keyframes float-slow {
@@ -156,5 +168,30 @@ body {
   }
   50% {
     opacity: 0.55;
+  }
+}
+
+@keyframes splash-logo {
+  from {
+    opacity: 0;
+    transform: perspective(800px) rotateX(50deg) translateY(48px) scale(0.55);
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: perspective(800px) rotateX(0deg) translateY(0) scale(1);
+  }
+}
+
+/* The grid plane is perspective-tilted; scrolling its background makes the
+   floor rush toward the viewer — the "flying over a 3D grid" effect. */
+@keyframes grid-fly {
+  from {
+    background-position-y: 0;
+  }
+  to {
+    background-position-y: 56px;
   }
 }
