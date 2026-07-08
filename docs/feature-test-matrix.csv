@@ -1,0 +1,61 @@
+#,Module,Feature,How to test,Role(s),Expected result,Status (Pass/Fail),Known issue / limitation,Improvement idea
+1,Marketing,Landing page,Open / in a logged-out browser,Public,Dark hero with animated product mock; 3D grid; India-edge cards; comparison table; CTAs work,,Doesn't yet mention Resume Studio / Mentor Connect / onboarding,Refresh marketing copy with the 3 newest features
+2,Marketing,Floating glass header,Scroll the landing page up and down,Public,Header transparent at top; gains dark glass background after ~32px scroll,,,
+3,Onboarding,Institution self-registration,/register → fill institution + admin name/email → submit,Public,Success screen shows institution code (slug); deep-link to prefilled login,,Open to anyone (no email verification / rate limit) — demo-grade by design,Gate behind email OTP before real customers
+4,Onboarding,Duplicate institution name,Register the same institution name twice,Public,Second attempt shows 'already registered' error (409),,,
+5,Onboarding,Empty-tenant gap,Log in as a freshly registered admin,Super Admin,Dashboard loads but tenant has no departments/batches/students,,No UI exists to create departments/batches/users — seeded tenants only,Build Institution Setup wizard + staff invitations (top backlog item)
+6,Auth,Staff/student login (stub SSO),/login → tenant 'demo-college' + role email → Continue,All,Logged in; redirected to /dashboard,,AUTH_SSO_PROVIDER=stub in prod: ANY known email logs in — no real credential check,Real SSO (Google/Microsoft) + cookie sessions before pilot
+7,Auth,Recruiter magic link,/login → Recruiter tab → email → 'Dev mode: open my magic link',Recruiter,Logged in via dev inbox token,,Dev inbox endpoint active in prod (stub flag on),Disable dev inbox outside dev when real provider lands
+8,Auth,Login prefill from onboarding,Visit /login?tenant=some-slug,Public,Institution field pre-filled with the slug,,,
+9,Auth,Token refresh,Stay logged in >15 min then navigate,All,Access token silently refreshed; no logout,,Tokens in localStorage (XSS-stealable) — documented tradeoff,BFF/httpOnly-cookie migration
+10,Auth,Suspended institution block,Suspend a tenant in /operator then try logging into it,Any,Login rejected: 'access is suspended — contact your platform provider',,Existing refresh tokens keep working up to 7 days after suspension,Also check institution status in the refresh path
+11,Operator,Key gate,/operator → wrong key then correct PLATFORM_ADMIN_KEY,Vendor,Wrong key → 'Invalid platform key'; correct → client table,,Key pasted in chat once — rotate it in Render if that matters,
+12,Operator,Client list with counts,Unlock /operator,Vendor,Every tenant listed with students/users/companies/drives/accepted-offer counts + status,,Counts only (by design) — no per-tenant activity/last-login yet,Add last-activity + monthly-active columns for churn spotting
+13,Operator,Provision institute,/operator → Provision institute → fill form,Vendor,New tenant appears in list; slug shown in toast,,,
+14,Operator,Suspend / reactivate,Click Suspend on a client then Reactivate,Vendor,Status badge flips; suspended client can't log in (see #10),,,
+15,App shell,Role-filtered sidebar,Log in as each role and compare sidebar,All,Students see Resume Studio; staff see Report Studio; Policy only SA/TPO etc.,,,
+16,App shell,Mobile responsive nav,Open dashboard at phone width,All,Hamburger + slide-in drawer with backdrop; sidebar sticky on desktop,,,
+17,App shell,Command palette,Ctrl+K → type 'nirf' → Enter,All,Palette opens; Report Studio found by keyword; navigates on Enter; role-filtered,,,
+18,App shell,User menu,Click profile at sidebar bottom,All,Menu opens UPWARD fully visible; Sign out works,,,
+19,PWA/APK,Install + full-screen,Install PMS.apk; open app,Any,No URL bar (assetlinks verified); native splash then 3D boot splash,,Debug-signed APK — Play Store needs a proper keystore + its fingerprint appended to assetlinks.json,
+20,PWA/APK,3D boot splash,Force-stop app → reopen,Any,Grid-floor splash with logo flip ~1.4s then fades; browsers never see it,,,
+21,PWA/APK,Logged-out app open,Open app while logged out,Public,Lands on LANDING page (not login); Sign in one tap away,,,
+22,PWA/APK,Live updates,Push any web change; reopen app,Any,App shows new version without reinstalling APK,,Service worker is network-first; offline shows last cached page only,Real offline mode + FCM push notifications (killer mobile feature)
+23,Staff dashboard,KPI cards + funnel,Log in as TPO/SA,Staff,Placement rate / placed / median CTC / active drives; funnel with stage conversion %,,Placed can exceed Selected (PPOs) — conversion deliberately hidden >100%,
+24,Staff dashboard,Placement intelligence,Check signals panel,Staff,Live derived signals (eligible-not-applied; biggest funnel leak; YoY trend) each linking to the right page,,Heuristics are client-side; no history/trending of signals,Persist signals server-side for week-over-week tracking
+25,Staff dashboard,Top recruiters,Check This Week column,Staff,Companies ranked by accepted offers with logos and top CTC,,Built from full offers+companies fetch client-side,Dedicated API endpoint once data grows
+26,Student home,Personalized hero,Log in as student@demo-college.edu,Student,Status hero (placed banner / pending-offer CTA) + profile strength meter,,,
+27,Student home,Open drives + eligibility preview,Check 'Open drives for you',Student,Per-drive verdict vs OWN record ('Needs CGPA ≥ 8.5 — you: 7.85'); eligible drives sorted first,,Client-side preview can drift from server engine if criteria shapes evolve,Share evaluator logic via @pms/types
+28,Student home,Quick apply,Click Apply on an eligible drive,Student,Application submitted; badge flips to 'Applied'; server engine remains authority,,,
+29,Students,Staff roster,/students as TPO,Staff,Search + dept/batch/status/sort filters; insight chips (placed % / avg CGPA / at-risk); CGPA bars; at-risk flags,,Whole roster fetched at once — no pagination (breaks at 1000s of rows),Server-side pagination + indexes (top perf item)
+30,Students,Detail dialog,Click any student row,Staff,Full academic record + profile-strength meter,,,
+31,Students,Self profile card,/students as a student,Student,Profile card w/ strength meter + academic grid (not a 1-row table),,,
+32,Students,Dept scoping,/students as faculty.cse@,Faculty Coord,Only own-department students visible,,,
+33,Resume Studio,Builder + live preview,/resume as student; edit each section,Student,A4 preview updates live; education auto-filled from registrar record (not editable),,,
+34,Resume Studio,Profile links,Save LinkedIn/GitHub/LeetCode/Codeforces URLs,Student,Persisted; shown on resume header; counted by ATS,,Only URL format validated — no liveness/ownership check,
+35,Resume Studio,ATS score,Add/remove quantified bullets and watch score,Student,9 transparent checks with pass/fail + advice; score updates live,,Deterministic heuristic — don't market as 'AI',Optional LLM-powered rewrite suggestions later
+36,Resume Studio,Target-drive keyword match,Pick a drive in 'Score against a drive',Student,Keyword check compares resume text to that JD's wording,,JD keywords derived from title/location/programs only (no skills field on JD),Add skills[] to JobDescription schema
+37,Resume Studio,Interview prep packs,Check prep section ordering,Student,Packs re-ranked by round types in student's live applications ('In your pipeline' badges),,Static curated links,Per-institute curated resources table
+38,Resume Studio,Print/PDF,Click Print / PDF,Student,Only the A4 resume prints — no app chrome,,,
+39,Mentor Connect,Directory,/mentors,Student/Staff,Placed+opted-in mentors with company logo/CTC/PPO badge/answer count,,,
+40,Mentor Connect,Become a mentor,As a PLACED student toggle opt-in + headline,Student,Card appears in directory; server rejects UNPLACED opt-in,,,
+41,Mentor Connect,Ask + reply,Post question (community or directed); reply as placed senior,Student,Thread on board; 'Placed senior' badge on replies; mentor/staff reply flips status to ANSWERED,,No notifications — mentors must visit the board to see questions,Notify mentors (email/WhatsApp/FCM) on directed questions
+42,Mentor Connect,Moderation,View board as TPO,Staff,Full read + reply access (FULL scope),,No delete/hide controls yet,Add moderation actions + report button
+43,Companies,Card grid + filters,/companies; search; sector/tier dropdowns,All,Logo cards; filter options derived from data (not hardcoded),,Logos via Google favicon service (leaks domains; generic fallback if missing),Self-hosted logo cache/upload
+44,Companies,Add company,Add company w/ website URL,SA/TPO,Logo auto-appears from domain; tier dropdown; sector suggestions,,,
+45,Company detail,JD cards,Open a company (e.g. Razorpay),Staff,CTC breakup chips (fixed/variable/ESOPs); bond warning; per-program tags; slab badge,,,
+46,Company detail,Drive lifecycle,Post JD → create drive → add rounds → status transitions,SA/TPO,DRAFT→SCHEDULED→ONGOING→COMPLETED enforced; Faculty proposes DRAFT only,,,
+47,Company detail,Eligibility roster,Click Eligibility on a drive,Staff,Eligible/ineligible lists with per-rule failure reasons; cache vs fresh counts,,Roster forbidden to students (by design),
+48,Applications,Pipeline board,/applications,All,Status filter chips with live counts; search company/role/roll; logo rows; round pills (R1 PASS · 88),,Full list fetched — no pagination,Same pagination work as #29
+49,Applications,Apply / on-behalf,Apply dialog as student vs TPO,Student/Staff,Student: open drives picker only; TPO/Faculty: any drive + on-behalf student picker,,,
+50,Applications,Round results + shortlist + withdraw,Record result / shortlist / withdraw,TPO/Student,Status transitions enforced; terminal states lock withdraw,,,
+51,Offers,List + filters,/offers; filter by status and slab,All,Insight chips (total/acceptance rate/PPOs/top CTC); slab-toned badges; PPO marks; sorted by CTC,,,
+52,Offers,Full lifecycle,Extend (TPO/recruiter propose) → approve → accept/reject (student) → revoke,Multiple,State machine + one-offer-per-slab cap enforced by policy engine,,,
+53,Offers,PPO conversion,Convert PPO as TPO,TPO,PPO offer created without application; PPO badge everywhere,,,
+54,Policy,Rules page,/policy as TPO,SA/TPO,View/author eligibility/slab/offer-cap rules; versioning (edit = new version); activate archives predecessor,,Page untouched by revamp — plainer UI than rest,Visual polish pass + rule-simulation UI
+55,Analytics,Staff analytics,/analytics as TPO; change batch/dept,Staff,KPI strip w/ YoY deltas; clickable funnel drilldown; branch table; ETag-cached,,Branch table fires 1 request per department (6 depts = 6 calls); 112kB Recharts bundle,Single branch-summary endpoint; lazy-load charts
+56,Analytics,Role variants,/analytics as student and recruiter,Student/Recruiter,Student: cohort aggregates only; recruiter: own offer stats only (no rosters),,,
+57,Report Studio,NIRF/NAAC report,/reports as TPO → pick batch → Print,Staff,4-section accreditation report from live data; editable institution name; signature blocks; clean print,,Institution name stored in localStorage (API has no display-name endpoint); YoY needs previous-batch data,Expose institution profile via API
+58,Report Studio,Access control,/reports as student,Student,'Report Studio is for placement staff' empty state,,,
+59,Platform,Multi-tenant isolation,Create 2nd tenant; log into both,Any,Zero data crossover (RLS-enforced at Postgres level),,,
+60,Platform,Performance (cold start),First request after ~15 min idle,Any,API takes ~50s to wake (Render free tier),,ts-node in prod start inflates boot; every request wrapped in a DB transaction; no gzip,"Build @pms/db and @pms/types to JS, drop ts-node; enable compression; paid tier for demos"
